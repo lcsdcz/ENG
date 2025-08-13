@@ -2,18 +2,108 @@
  * 英语对话AI助手 - 主要应用逻辑
  */
 
+// 配置验证和备用系统
+function validateAndFixConfig() {
+    // 如果CONFIG不存在，创建一个基本的备用配置
+    if (typeof CONFIG === 'undefined') {
+        console.warn('CONFIG not found, creating fallback configuration');
+        window.CONFIG = {
+            openai: {
+                apiKey: 'sk-FadRRn1rmnl5cBivgMuR7pvppW2bTxo83QAUJ0osdAEnbEXe',
+                apiUrl: 'https://new1.588686.xyz/v1/chat/completions',
+                model: 'deepseek-ai/DeepSeek-V3-0324-fast',
+                maxTokens: 1000,
+                temperature: 0.7,
+                timeout: 30000
+            },
+            app: {
+                name: 'English AI Assistant',
+                version: '1.0.0',
+                language: 'en',
+                maxHistoryLength: 50
+            },
+            ui: {
+                theme: 'light',
+                fontSize: 'medium',
+                showTimestamps: true
+            },
+            filter: {
+                enabled: true,
+                blockedWords: ['porn', 'gambling', 'drugs', 'illegal'],
+                inappropriateKeywords: ['porn', 'gambling', 'drugs', 'illegal', '黄', '赌', '毒', '色情', '暴力', '赌博', '吸毒', '违法'],
+                redirectMessage: "I'm sorry, but I cannot discuss inappropriate or illegal topics. Let's focus on something positive and constructive instead. What would you like to learn about today?"
+            },
+            systemPrompt: `You are a helpful and positive English conversation AI assistant. You must:
+1. Only communicate in English
+2. Provide positive, uplifting content
+3. Strictly avoid any illegal content including pornography, gambling, drugs, or other harmful material
+4. Be encouraging and supportive in your responses
+5. Help users improve their English conversation skills`,
+            translationPrompt: `Please translate the following English text to Chinese while maintaining the original meaning and tone:`,
+            welcomeMessage: {
+                english: "Hello! I'm your English conversation AI assistant. I'm here to help you improve your English skills through natural conversation. What would you like to talk about today?",
+                chinese: "你好！我是你的英语对话AI助手。我在这里帮助你通过自然对话提高英语水平。你今天想聊什么？"
+            },
+            errorMessages: {
+                apiError: 'Sorry, I\'m having trouble connecting right now. Please try again.',
+                networkError: 'Network connection issue. Please check your internet connection.',
+                rateLimit: 'Too many requests. Please wait a moment before trying again.'
+            },
+            suggestedTopics: [
+                'Daily conversation',
+                'Travel and culture',
+                'Technology and innovation',
+                'Health and wellness',
+                'Education and learning',
+                'Business and career',
+                'Hobbies and interests',
+                'Current events'
+            ],
+            storageKeys: {
+                chatHistory: 'english_ai_chat_history',
+                userSettings: 'english_ai_user_settings',
+                conversationStats: 'english_ai_conversation_stats'
+            }
+        };
+    }
+    
+    // 验证和修复配置的完整性
+    if (!CONFIG.filter) CONFIG.filter = {};
+    if (!CONFIG.filter.inappropriateKeywords) CONFIG.filter.inappropriateKeywords = ['porn', 'gambling', 'drugs', 'illegal'];
+    if (!CONFIG.filter.redirectMessage) CONFIG.filter.redirectMessage = "I'm sorry, but I cannot discuss inappropriate or illegal topics. Let's focus on something positive and constructive instead.";
+    if (!CONFIG.filter.enabled) CONFIG.filter.enabled = true;
+    
+    if (!CONFIG.app) CONFIG.app = {};
+    if (!CONFIG.app.maxHistoryLength) CONFIG.app.maxHistoryLength = 50;
+    
+    if (!CONFIG.welcomeMessage) CONFIG.welcomeMessage = {};
+    if (!CONFIG.welcomeMessage.english) CONFIG.welcomeMessage.english = "Hello! I'm your English conversation AI assistant. How can I help you today?";
+    if (!CONFIG.welcomeMessage.chinese) CONFIG.welcomeMessage.chinese = "你好！我是你的英语对话AI助手。你今天想聊什么？";
+    
+    if (!CONFIG.systemPrompt) CONFIG.systemPrompt = "You are a helpful and positive English conversation AI assistant.";
+    if (!CONFIG.translationPrompt) CONFIG.translationPrompt = "Please translate the following English text to Chinese while maintaining the original meaning and tone:";
+    
+    console.log('Configuration validated and fixed:', CONFIG);
+}
+
+// 在页面加载时立即验证配置
+validateAndFixConfig();
+
 class EnglishAIAssistant {
     constructor() {
+        console.log('EnglishAIAssistant constructor called');
         this.chatHistory = [];
         this.isLoading = false;
         this.userSettings = this.loadUserSettings();
         this.conversationStats = this.loadConversationStats();
         this.translationEnabled = true; // 默认启用翻译
         
+        console.log('Constructor completed, calling init()');
         this.init();
     }
     
     init() {
+        console.log('Initializing EnglishAIAssistant...');
         this.loadChatHistory();
         this.setupEventListeners();
         this.applyUserSettings();
@@ -23,6 +113,7 @@ class EnglishAIAssistant {
         // 从用户设置加载翻译状态
         this.translationEnabled = this.userSettings.translationEnabled;
         this.updateTranslationButton();
+        console.log('Initialization completed');
     }
     
     setupEventListeners() {
@@ -148,7 +239,7 @@ class EnglishAIAssistant {
             // 安全检查：确保redirectMessage配置存在
             const redirectMsg = CONFIG && CONFIG.filter && CONFIG.filter.redirectMessage 
                 ? CONFIG.filter.redirectMessage 
-                : "I'm sorry, but I cannot discuss inappropriate or illegal topics. Let's focus on something positive and constructive instead.";
+                : "I'm sorry, but I cannot discuss inappropriate or illegal topics. Let's focus on something positive and constructive instead. What would you like to learn about today?";
             this.addMessage('ai', redirectMsg, '抱歉，我不能讨论不当或违法的话题。让我们专注于积极和建设性的事情吧。您今天想了解什么？');
             userInput.value = '';
             this.updateCharCount(0);
@@ -286,6 +377,8 @@ class EnglishAIAssistant {
     }
     
     addMessage(role, content, translation = '') {
+        console.log('addMessage called:', { role, content, translation });
+        
         const message = {
             id: Date.now(),
             role: role,
@@ -295,14 +388,17 @@ class EnglishAIAssistant {
         };
         
         this.chatHistory.push(message);
+        console.log('Message added to chatHistory, total messages:', this.chatHistory.length);
         
         // 限制历史记录长度（添加安全检查）
         const maxLength = CONFIG && CONFIG.app && CONFIG.app.maxHistoryLength ? CONFIG.app.maxHistoryLength : 50;
         if (this.chatHistory.length > maxLength) {
             this.chatHistory = this.chatHistory.slice(-maxLength);
+            console.log('Chat history trimmed to max length:', maxLength);
         }
         
         // 渲染消息
+        console.log('Rendering message...');
         this.renderMessage(message);
         
         // 自动保存
@@ -312,6 +408,7 @@ class EnglishAIAssistant {
         
         // 滚动到底部
         this.scrollToBottom();
+        console.log('addMessage completed');
     }
     
     renderAllMessages() {
@@ -326,7 +423,13 @@ class EnglishAIAssistant {
     }
     
     renderMessage(message) {
+        console.log('renderMessage called for:', message);
+        
         const chatHistory = document.getElementById('chatHistory');
+        if (!chatHistory) {
+            console.error('chatHistory element not found!');
+            return;
+        }
         
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${message.role}-message`;
@@ -362,6 +465,7 @@ class EnglishAIAssistant {
         messageDiv.appendChild(content);
         
         chatHistory.appendChild(messageDiv);
+        console.log('Message rendered and added to DOM');
     }
     
     isInappropriateContent(content) {
@@ -559,17 +663,23 @@ class EnglishAIAssistant {
     }
     
     showWelcomeMessage() {
+        console.log('showWelcomeMessage called, chatHistory length:', this.chatHistory.length);
         // 如果这是第一次使用，显示欢迎消息
         if (this.chatHistory.length === 0) {
+            console.log('Showing welcome message for first time user');
             // 安全检查：确保welcomeMessage配置存在
             if (CONFIG && CONFIG.welcomeMessage) {
                 const englishMsg = CONFIG.welcomeMessage.english || CONFIG.welcomeMessage;
                 const chineseMsg = CONFIG.welcomeMessage.chinese || '';
+                console.log('Welcome message config found:', { english: englishMsg, chinese: chineseMsg });
                 this.addMessage('ai', englishMsg, chineseMsg);
             } else {
                 // 备用欢迎消息
+                console.log('Using fallback welcome message');
                 this.addMessage('ai', 'Hello! I\'m your English conversation AI assistant. How can I help you today?', '你好！我是你的英语对话AI助手。你今天想聊什么？');
             }
+        } else {
+            console.log('Not showing welcome message, chat history exists');
         }
     }
 
@@ -710,21 +820,11 @@ class EnglishAIAssistant {
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
-    // 检查配置是否已替换
-    if (CONFIG.openai.apiKey === '{{OPENAI_API_KEY}}') {
-        console.warn('API配置未替换，请确保已正确配置GitHub Actions');
-        document.body.innerHTML = `
-            <div class="container mt-5">
-                <div class="alert alert-warning">
-                    <h4>配置未完成</h4>
-                    <p>API配置尚未设置，请按照部署说明配置GitHub Secrets和Actions。</p>
-                    <p>详细说明请查看项目README文档。</p>
-                </div>
-            </div>
-        `;
-        return;
-    }
+    // 确保配置已经验证和修复
+    validateAndFixConfig();
     
     // 初始化AI助手
     window.aiAssistant = new EnglishAIAssistant();
+    
+    console.log('English AI Assistant initialized successfully');
 });
