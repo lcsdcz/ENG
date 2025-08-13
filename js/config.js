@@ -6,9 +6,9 @@
 
 const CONFIG = {
     openai: {
-        apiKey: '{{OPENAI_API_KEY}}',
-        apiUrl: '{{OPENAI_API_URL}}',
-        model: '{{OPENAI_MODEL}}',
+        apiKey: 'sk-FadRRn1rmnl5cBivgMuR7pvppW8bTxo83QAUJ0osdAEnxEXe',
+        apiUrl: 'https://new1.588686.xyz/v1/chat/completions',
+        model: 'deepseek-ai/DeepSeek-V3-0324-fast',
         maxTokens: 1000,
         temperature: 0.7,
         timeout: 30000

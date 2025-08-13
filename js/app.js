@@ -9,7 +9,7 @@ function validateAndFixConfig() {
         console.warn('CONFIG not found, creating fallback configuration');
         window.CONFIG = {
             openai: {
-                apiKey: 'sk-FadRRn1rmnl5cBivgMuR7pvppW2bTxo83QAUJ0osdAEnbEXe',
+                apiKey: 'sk-FadRRn1rmnl5cBivgMuR7pvppW8bTxo83QAUJ0osdAEnxEXe',
                 apiUrl: 'https://new1.588686.xyz/v1/chat/completions',
                 model: 'deepseek-ai/DeepSeek-V3-0324-fast',
                 maxTokens: 1000,
