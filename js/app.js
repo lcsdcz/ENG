@@ -11,7 +11,7 @@ function validateAndFixConfig() {
             openai: {
                 apiKey: 'sk-FadRRn1rmnl5cBivgMuR7pvppW8bTxo83QAUJ0osdAEnxEXe',
                 apiUrl: 'https://new1.588686.xyz/v1/chat/completions',
-                model: 'deepseek-ai/DeepSeek-V3-0324-fast',
+                model: 'gpt-3.5-turbo',
                 maxTokens: 1000,
                 temperature: 0.7,
                 timeout: 30000
@@ -33,12 +33,7 @@ function validateAndFixConfig() {
                 inappropriateKeywords: ['porn', 'gambling', 'drugs', 'illegal', '黄', '赌', '毒', '色情', '暴力', '赌博', '吸毒', '违法'],
                 redirectMessage: "I'm sorry, but I cannot discuss inappropriate or illegal topics. Let's focus on something positive and constructive instead. What would you like to learn about today?"
             },
-            systemPrompt: `You are a helpful and positive English conversation AI assistant. You must:
-1. Only communicate in English
-2. Provide positive, uplifting content
-3. Strictly avoid any illegal content including pornography, gambling, drugs, or other harmful material
-4. Be encouraging and supportive in your responses
-5. Help users improve their English conversation skills`,
+            systemPrompt: `You are a helpful English conversation AI assistant. You must only communicate in English and provide positive, uplifting content. Help users improve their English conversation skills. Always respond directly to what the user asks and engage in natural conversation.`,
             translationPrompt: `Please translate the following English text to Chinese while maintaining the original meaning and tone:`,
             welcomeMessage: {
                 english: "Hello! I'm your English conversation AI assistant. I'm here to help you improve your English skills through natural conversation. What would you like to talk about today?",
@@ -369,12 +364,40 @@ class EnglishAIAssistant {
     
     getLocalFallbackResponse(userMessage) {
         // 本地模拟回复，用于API失败时的备用方案
+        const lowerMessage = userMessage.toLowerCase();
+        
+        // 根据用户消息内容提供智能回复
+        if (lowerMessage.includes('name') || lowerMessage.includes('叫什么')) {
+            return "My name is English AI Assistant! I'm here to help you practice English conversation. What's your name?";
+        }
+        
+        if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('你好')) {
+            return "Hello! Nice to meet you! I'm excited to help you improve your English skills. How are you today?";
+        }
+        
+        if (lowerMessage.includes('how are you') || lowerMessage.includes('你好吗')) {
+            return "I'm doing great, thank you for asking! I'm here and ready to help you practice English. How about you?";
+        }
+        
+        if (lowerMessage.includes('thank') || lowerMessage.includes('谢谢')) {
+            return "You're very welcome! I'm happy to help you with English. Is there anything specific you'd like to practice today?";
+        }
+        
+        if (lowerMessage.includes('what') || lowerMessage.includes('什么')) {
+            return "That's a great question! I'd be happy to help you with that. Could you tell me more about what you'd like to know?";
+        }
+        
+        if (lowerMessage.includes('help') || lowerMessage.includes('帮助')) {
+            return "Of course! I'm here to help you practice English conversation. We can talk about daily life, travel, hobbies, or anything you're interested in. What would you like to discuss?";
+        }
+        
+        // 通用回复
         const responses = [
-            "Hello! I'm here to help you practice English. Your message was: '" + userMessage + "'. How can I assist you today?",
-            "Great to hear from you! I understand you said: '" + userMessage + "'. Let's continue our English conversation!",
-            "Thanks for your message! I'm here to help improve your English skills. What would you like to discuss?",
-            "Hello there! I'm your English conversation partner. I'm ready to help you practice and improve your English!",
-            "Welcome! I'm excited to help you with English conversation. Let's make learning fun and engaging!"
+            "That's interesting! I'd love to hear more about that. Let's continue our English conversation!",
+            "Great topic! I'm here to help you practice English. What else would you like to discuss?",
+            "I understand what you're saying. Let's practice English together! What's on your mind?",
+            "Thanks for sharing that with me! I'm excited to help you improve your English skills. What would you like to talk about next?",
+            "That's wonderful! I'm here to be your English conversation partner. Let's make learning fun and engaging!"
         ];
         
         // 根据用户消息长度选择回复
@@ -464,18 +487,55 @@ class EnglishAIAssistant {
             'i\'m fine': '我很好',
             'nice to meet you': '很高兴认识你',
             'what is your name': '你叫什么名字',
-            'my name is': '我的名字是'
+            'my name is': '我的名字是',
+            'english': '英语',
+            'practice': '练习',
+            'conversation': '对话',
+            'help': '帮助',
+            'learn': '学习',
+            'improve': '提高',
+            'skills': '技能',
+            'today': '今天',
+            'tomorrow': '明天',
+            'yesterday': '昨天',
+            'good': '好的',
+            'great': '很棒',
+            'excellent': '优秀',
+            'wonderful': '精彩',
+            'interesting': '有趣',
+            'exciting': '令人兴奋',
+            'happy': '开心',
+            'sad': '难过',
+            'tired': '疲惫',
+            'busy': '忙碌',
+            'free': '空闲'
         };
         
         const lowerText = englishText.toLowerCase();
+        
+        // 尝试找到最匹配的翻译
         for (const [eng, chn] of Object.entries(translations)) {
             if (lowerText.includes(eng)) {
                 return chn;
             }
         }
         
-        // 如果没有找到匹配的翻译，返回通用回复
-        return '这是AI的英文回复，翻译功能暂时不可用。';
+        // 如果没有找到匹配的翻译，尝试提供部分翻译
+        const words = lowerText.split(' ');
+        const translatedWords = words.map(word => {
+            if (translations[word]) {
+                return translations[word];
+            }
+            return word;
+        });
+        
+        // 如果有一些翻译，返回混合结果
+        if (translatedWords.some(word => translations[word])) {
+            return `部分翻译: ${translatedWords.join(' ')}`;
+        }
+        
+        // 如果完全没有翻译，返回通用回复
+        return '这是AI的英文回复。如需完整翻译，请稍后再试。';
     }
     
     addMessage(role, content, translation = '') {
