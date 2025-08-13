@@ -24,16 +24,6 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
       
-    - name: Replace API configuration
-      run: |
-        # Replace placeholders with environment variables using sed with pipe delimiter
-        # This avoids issues with special characters in URLs and API keys
-        sed -i 's|{{OPENAI_API_KEY}}|'${{ secrets.OPENAI_API_KEY }}'|g' js/config.js
-        sed -i 's|{{OPENAI_API_URL}}|'${{ secrets.OPENAI_API_URL }}'|g' js/config.js
-        sed -i 's|{{OPENAI_MODEL}}|'${{ secrets.OPENAI_MODEL }}'|g' js/config.js
-        
-        echo "API configuration replacement completed"
-        
     - name: Setup Pages
       uses: actions/configure-pages@v4
       
