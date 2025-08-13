@@ -104,6 +104,7 @@ class EnglishAIAssistant {
         this.userSettings = this.loadUserSettings();
         this.conversationStats = this.loadConversationStats();
         this.translationEnabled = true; // 默认启用翻译
+        this.essayMode = false; // 作文模式开关
         
         console.log('Constructor completed, calling init()');
         this.init();
@@ -117,9 +118,11 @@ class EnglishAIAssistant {
         this.updateStats();
         this.showWelcomeMessage();
         
-        // 从用户设置加载翻译状态
+        // 从用户设置加载翻译状态和作文模式状态
         this.translationEnabled = this.userSettings.translationEnabled;
+        this.essayMode = this.userSettings.essayMode;
         this.updateTranslationButton();
+        this.updateEssayModeButton();
         console.log('Initialization completed');
     }
     
@@ -153,6 +156,14 @@ class EnglishAIAssistant {
         if (translationToggle) {
             translationToggle.addEventListener('click', () => {
                 this.toggleTranslation();
+            });
+        }
+        
+        // 作文模式开关按钮
+        const essayModeToggle = document.getElementById('essayModeToggle');
+        if (essayModeToggle) {
+            essayModeToggle.addEventListener('click', () => {
+                this.toggleEssayMode();
             });
         }
         
@@ -295,8 +306,17 @@ class EnglishAIAssistant {
             throw new Error('API configuration is incomplete');
         }
         
+        // 检测是否为作文请求
+        const isEssayRequest = this.detectEssayRequest(userMessage);
+        
+        // 根据模式选择系统提示词
+        let systemPrompt = CONFIG.systemPrompt;
+        if (this.essayMode || isEssayRequest) {
+            systemPrompt = this.getEssaySystemPrompt();
+        }
+        
         const messages = [
-            { role: 'system', content: CONFIG.systemPrompt },
+            { role: 'system', content: systemPrompt },
             ...this.getRecentHistory(),
             { role: 'user', content: userMessage }
         ];
@@ -313,7 +333,8 @@ class EnglishAIAssistant {
             url: CONFIG.openai.apiUrl,
             model: requestData.model,
             messages: requestData.messages,
-            max_tokens: requestData.max_tokens
+            max_tokens: requestData.max_tokens,
+            essayMode: this.essayMode || isEssayRequest
         });
         
         try {
@@ -360,6 +381,48 @@ class EnglishAIAssistant {
             console.log('API call failed, using local fallback response');
             return this.getLocalFallbackResponse(userMessage);
         }
+    }
+    
+    // 检测是否为作文请求
+    detectEssayRequest(userMessage) {
+        const lowerMessage = userMessage.toLowerCase();
+        const essayKeywords = [
+            '作文', '文章', '写作', '写一篇', '写一篇文章', '写一个', '写一个关于',
+            'essay', 'article', 'write', 'write an', 'write a', 'composition',
+            'letter', 'application', 'report', 'story', 'narrative'
+        ];
+        
+        return essayKeywords.some(keyword => lowerMessage.includes(keyword));
+    }
+    
+    // 获取作文模式的系统提示词
+    getEssaySystemPrompt() {
+        return `You are an expert English writing tutor and essay generator. When writing essays, you must:
+
+1. **Structure & Format**: 
+   - Use proper essay structure (introduction, body paragraphs, conclusion)
+   - Include clear topic sentences and supporting details
+   - Use appropriate paragraph breaks and formatting
+
+2. **Language Quality**:
+   - Use advanced vocabulary and sophisticated expressions
+   - Vary sentence structures (simple, compound, complex sentences)
+   - Employ proper grammar, punctuation, and spelling
+   - Use academic and formal language appropriate for essays
+
+3. **Content Requirements**:
+   - Provide well-developed arguments with examples
+   - Use transitional phrases to connect ideas
+   - Maintain consistent tone and style throughout
+   - Ensure logical flow and coherence
+
+4. **Writing Standards**:
+   - Aim for 300-500 words for standard essays
+   - Use active voice when appropriate
+   - Avoid repetitive language
+   - Include relevant details and specific examples
+
+Always respond in English and focus on creating high-quality, well-structured essays that demonstrate excellent writing skills.`;
     }
     
     getLocalFallbackResponse(userMessage) {
@@ -734,7 +797,8 @@ class EnglishAIAssistant {
         try {
             const settings = {
                 ...this.userSettings,
-                translationEnabled: this.translationEnabled
+                translationEnabled: this.translationEnabled,
+                essayMode: this.essayMode
             };
             localStorage.setItem(CONFIG.storageKeys.userSettings, JSON.stringify(settings));
         } catch (error) {
@@ -751,7 +815,8 @@ class EnglishAIAssistant {
                     showEnglish: settings.showEnglish !== undefined ? settings.showEnglish : true,
                     showChinese: settings.showChinese !== undefined ? settings.showChinese : true,
                     autoSave: settings.autoSave !== undefined ? settings.autoSave : true,
-                    translationEnabled: settings.translationEnabled !== undefined ? settings.translationEnabled : true
+                    translationEnabled: settings.translationEnabled !== undefined ? settings.translationEnabled : true,
+                    essayMode: settings.essayMode !== undefined ? settings.essayMode : false
                 };
             }
         } catch (error) {
@@ -762,7 +827,8 @@ class EnglishAIAssistant {
             showEnglish: true,
             showChinese: true,
             autoSave: true,
-            translationEnabled: true
+            translationEnabled: true,
+            essayMode: false
         };
     }
     
@@ -770,6 +836,7 @@ class EnglishAIAssistant {
         const showEnglish = document.getElementById('showEnglish');
         const showChinese = document.getElementById('showChinese');
         const autoSave = document.getElementById('autoSave');
+        const essayModeToggle = document.getElementById('essayModeToggle');
         
         if (showEnglish) {
             showEnglish.checked = this.userSettings.showEnglish;
@@ -779,6 +846,9 @@ class EnglishAIAssistant {
         }
         if (autoSave) {
             autoSave.checked = this.userSettings.autoSave;
+        }
+        if (essayModeToggle) {
+            essayModeToggle.checked = this.userSettings.essayMode;
         }
     }
     
@@ -852,6 +922,61 @@ class EnglishAIAssistant {
         
         // 重新渲染所有消息以应用翻译设置
         this.renderAllMessages();
+    }
+    
+    toggleEssayMode() {
+        this.essayMode = !this.essayMode;
+        this.updateEssayModeButton();
+        this.saveUserSettings();
+        
+        // 重新渲染所有消息以应用作文模式设置
+        this.renderAllMessages();
+        
+        // 显示作文模式提示
+        if (this.essayMode) {
+            this.showEssayModePrompt();
+        }
+    }
+    
+    updateEssayModeButton() {
+        const button = document.getElementById('essayModeToggle');
+        const text = document.getElementById('essayModeText');
+        
+        if (button && text) {
+            if (this.essayMode) {
+                button.classList.add('active');
+                text.textContent = '作文模式已开启';
+            } else {
+                button.classList.remove('active');
+                text.textContent = '作文模式';
+            }
+        }
+        
+        // 更新页面样式
+        const body = document.body;
+        if (this.essayMode) {
+            body.classList.add('essay-mode');
+        } else {
+            body.classList.remove('essay-mode');
+        }
+    }
+    
+    showEssayModePrompt() {
+        const promptDiv = document.createElement('div');
+        promptDiv.className = 'essay-prompt';
+        promptDiv.textContent = '作文模式已激活！AI将自动生成格式规范、词汇高级、语法地道的英语作文。';
+        
+        const container = document.querySelector('.container');
+        if (container) {
+            container.insertBefore(promptDiv, container.firstChild);
+            
+            // 5秒后自动消失
+            setTimeout(() => {
+                if (promptDiv.parentNode) {
+                    promptDiv.remove();
+                }
+            }, 5000);
+        }
     }
     
     updateTranslationButton() {
@@ -932,6 +1057,7 @@ class EnglishAIAssistant {
         this.userSettings.showEnglish = document.getElementById('showEnglish').checked;
         this.userSettings.showChinese = document.getElementById('showChinese').checked;
         this.userSettings.autoSave = document.getElementById('autoSave').checked;
+        this.userSettings.essayMode = document.getElementById('essayModeToggle').checked;
         this.saveUserSettings();
         
         // 重新渲染消息以应用新设置

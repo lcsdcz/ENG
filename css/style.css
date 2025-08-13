@@ -515,3 +515,48 @@ body {
     color: rgba(255, 255, 255, 0.6);
     font-size: 0.75rem;
 }
+
+/* 作文模式按钮样式 */
+#essayModeToggle.active {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: white;
+}
+
+#essayModeToggle.active:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+/* 作文模式下的消息样式 */
+.essay-mode .ai-message .message-content {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-left: 4px solid #28a745;
+    padding: 20px;
+    margin: 10px 0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.essay-mode .ai-message .message-text {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    line-height: 1.8;
+    text-align: justify;
+    text-indent: 2em;
+}
+
+/* 作文提示框样式 */
+.essay-prompt {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border: 1px solid #c3e6cb;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 10px 0;
+    font-style: italic;
+    color: #155724;
+}
+
+.essay-prompt::before {
+    content: "✍️ 作文模式已激活 - ";
+    font-weight: bold;
+}
