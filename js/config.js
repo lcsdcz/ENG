@@ -8,7 +8,7 @@ const CONFIG = {
     openai: {
         apiKey: 'sk-FadRRn1rmnl5cBivgMuR7pvppW8bTxo83QAUJ0osdAEnxEXe',
         apiUrl: 'https://new1.588686.xyz/v1/chat/completions',
-        model: 'gpt-3.5-turbo',
+        model: 'deepseek-chat',
         maxTokens: 1000,
         temperature: 0.7,
         timeout: 30000
@@ -66,7 +66,7 @@ if (typeof module !== 'undefined' && module.exports) {
         openai: {
             apiKey: 'sk-FadRRn1rmnl5cBivgMuR7pvppW8bTxo83QAUJ0osdAEnxEXe',
             apiUrl: 'https://new1.588686.xyz/v1/chat/completions',
-            model: 'gpt-3.5-turbo',
+            model: 'deepseek-chat',
             maxTokens: 1000,
             temperature: 0.7,
             timeout: 30000

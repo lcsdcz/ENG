@@ -11,7 +11,7 @@ function validateAndFixConfig() {
             openai: {
                 apiKey: 'sk-FadRRn1rmnl5cBivgMuR7pvppW8bTxo83QAUJ0osdAEnxEXe',
                 apiUrl: 'https://new1.588686.xyz/v1/chat/completions',
-                model: 'gpt-3.5-turbo',
+                model: 'deepseek-chat',
                 maxTokens: 1000,
                 temperature: 0.7,
                 timeout: 30000
@@ -302,7 +302,7 @@ class EnglishAIAssistant {
         ];
         
         const requestData = {
-            model: CONFIG.openai.model || 'gpt-3.5-turbo',
+            model: CONFIG.openai.model || 'deepseek-chat',
             messages: messages,
             max_tokens: CONFIG.openai.maxTokens || 1000,
             temperature: CONFIG.openai.temperature || 0.7,
@@ -419,7 +419,7 @@ class EnglishAIAssistant {
             ];
             
             const requestData = {
-                model: CONFIG.openai.model || 'gpt-3.5-turbo',
+                model: CONFIG.openai.model || 'deepseek-chat',
                 messages: messages,
                 max_tokens: 500,
                 temperature: 0.3,
