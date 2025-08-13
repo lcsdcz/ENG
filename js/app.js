@@ -689,10 +689,14 @@ REMEMBER: You are an English AI assistant. You can understand Chinese input but 
         const content = document.createElement('div');
         content.className = 'message-content';
         
-        // 总是显示英文内容
+        // 总是显示英文内容，支持自动换行
         const textDiv = document.createElement('div');
         textDiv.className = 'message-text';
-        textDiv.textContent = message.content;
+        
+        // 处理文本换行和格式
+        const formattedText = this.formatMessageText(message.content);
+        textDiv.innerHTML = formattedText;
+        
         content.appendChild(textDiv);
         
         // 根据翻译开关决定是否显示中文翻译
@@ -708,6 +712,28 @@ REMEMBER: You are an English AI assistant. You can understand Chinese input but 
         
         chatHistory.appendChild(messageDiv);
         console.log('Message rendered and added to DOM');
+    }
+    
+    // 格式化消息文本，支持换行和基本格式
+    formatMessageText(text) {
+        if (!text) return '';
+        
+        // 将换行符转换为HTML换行
+        let formattedText = text
+            .replace(/\n/g, '<br>')
+            .replace(/\r\n/g, '<br>')
+            .replace(/\r/g, '<br>');
+        
+        // 支持基本的Markdown样式
+        formattedText = formattedText
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // 粗体
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')              // 斜体
+            .replace(/`(.*?)`/g, '<code>$1</code>')            // 代码
+            .replace(/^### (.*$)/gm, '<h3>$1</h3>')            // 三级标题
+            .replace(/^## (.*$)/gm, '<h4>$1</h4>')             // 四级标题
+            .replace(/^# (.*$)/gm, '<h5>$1</h5>');             // 五级标题
+        
+        return formattedText;
     }
     
     isInappropriateContent(content) {
@@ -739,9 +765,16 @@ REMEMBER: You are an English AI assistant. You can understand Chinese input but 
     
     showLoading(show) {
         this.isLoading = show;
-        const loadingIndicator = document.getElementById('loadingIndicator');
-        loadingIndicator.style.display = show ? 'flex' : 'none';
         
+        if (show) {
+            // 显示聊天区域的思考指示器
+            this.showThinkingIndicator();
+        } else {
+            // 隐藏思考指示器
+            this.hideThinkingIndicator();
+        }
+        
+        // 更新发送按钮状态
         const sendButton = document.getElementById('sendButton');
         if (sendButton) {
             if (show) {
@@ -751,6 +784,46 @@ REMEMBER: You are an English AI assistant. You can understand Chinese input but 
                 sendButton.disabled = false;
                 sendButton.innerHTML = '<i class="fas fa-paper-plane me-1"></i>发送';
             }
+        }
+    }
+    
+    // 显示思考指示器
+    showThinkingIndicator() {
+        // 移除已存在的思考指示器
+        this.hideThinkingIndicator();
+        
+        const chatHistory = document.getElementById('chatHistory');
+        if (!chatHistory) return;
+        
+        const thinkingDiv = document.createElement('div');
+        thinkingDiv.className = 'thinking-indicator';
+        thinkingDiv.id = 'thinkingIndicator';
+        
+        thinkingDiv.innerHTML = `
+            <div class="avatar">
+                <i class="fas fa-robot"></i>
+            </div>
+            <div class="content">
+                <div class="text">AI正在思考中</div>
+                <div class="dots">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            </div>
+        `;
+        
+        chatHistory.appendChild(thinkingDiv);
+        
+        // 滚动到底部
+        this.scrollToBottom();
+    }
+    
+    // 隐藏思考指示器
+    hideThinkingIndicator() {
+        const existingIndicator = document.getElementById('thinkingIndicator');
+        if (existingIndicator) {
+            existingIndicator.remove();
         }
     }
     

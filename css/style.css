@@ -560,3 +560,132 @@ body {
     content: "✍️ 作文模式已激活 - ";
     font-weight: bold;
 }
+
+/* 消息文本自动换行 */
+.message-text {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.6;
+    max-width: 100%;
+}
+
+/* AI思考指示器 - 在聊天区域显示 */
+.thinking-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 15px 20px;
+    margin: 10px 0;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 15px;
+    border-left: 4px solid #007bff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    animation: thinking-pulse 1.5s ease-in-out infinite;
+}
+
+.thinking-indicator .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.thinking-indicator .avatar i {
+    color: white;
+    font-size: 18px;
+}
+
+.thinking-indicator .content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.thinking-indicator .text {
+    color: #6c757d;
+    font-size: 14px;
+    margin-right: 15px;
+}
+
+.thinking-indicator .dots {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.thinking-indicator .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #007bff;
+    animation: dot-bounce 1.4s ease-in-out infinite both;
+}
+
+.thinking-indicator .dot:nth-child(1) { animation-delay: -0.32s; }
+.thinking-indicator .dot:nth-child(2) { animation-delay: -0.16s; }
+.thinking-indicator .dot:nth-child(3) { animation-delay: 0s; }
+
+/* 思考指示器动画 */
+@keyframes thinking-pulse {
+    0%, 100% { opacity: 1; transform: translateY(0); }
+    50% { opacity: 0.8; transform: translateY(-2px); }
+}
+
+@keyframes dot-bounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+}
+
+/* 隐藏全屏加载指示器 */
+#loadingIndicator {
+    display: none !important;
+}
+
+/* 消息内容自动换行优化 */
+.message-content {
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.ai-message .message-content {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-left: 4px solid #28a745;
+    padding: 20px;
+    margin: 10px 0;
+    border-radius: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    word-break: break-word;
+}
+
+.user-message .message-content {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    padding: 15px 20px;
+    margin: 10px 0;
+    border-radius: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    word-break: break-word;
+}
+
+/* 长文本自动换行优化 */
+.message-text {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    line-height: 1.6;
+    text-align: justify;
+}
+
+/* 作文模式下的文本换行 */
+.essay-mode .ai-message .message-text {
+    text-indent: 2em;
+    line-height: 1.8;
+    font-family: 'Georgia', 'Times New Roman', serif;
+}
