@@ -1,19 +1,21 @@
 /**
- * 英语对话AI助手 - 简化版本
+ * 英语对话AI助手 - 修复版本
  */
 
-// 配置对象
-const CONFIG = {
-    openai: {
-        apiKey: 'sk-oQ5JuAiv2D9SQZ0Y48LvJEUvqfuxjPR2weQJMOnF0IR7fkMQ',
-        apiUrl: 'https://gpt.soruxgpt.com/api/api/v1/chat/completions',
-        model: 'gpt-4o',
-        maxTokens: 1000,
-        temperature: 0.7
-    },
-    systemPrompt: `You are a helpful English conversation AI assistant. CRITICAL RULE: You must ALWAYS communicate in English ONLY. Never respond in Chinese or any other language.`,
-    translationPrompt: `Please translate the following English text to Chinese while maintaining the original meaning and tone:`
-};
+// 检查是否已经存在CONFIG，如果不存在则创建
+if (typeof window.CONFIG === 'undefined') {
+    window.CONFIG = {
+        openai: {
+            apiKey: 'sk-oQ5JuAiv2D9SQZ0Y48LvJEUvqfuxjPR2weQJMOnF0IR7fkMQ',
+            apiUrl: 'https://gpt.soruxgpt.com/api/api/v1/chat/completions',
+            model: 'gpt-4o',
+            maxTokens: 1000,
+            temperature: 0.7
+        },
+        systemPrompt: `You are a helpful English conversation AI assistant. CRITICAL RULE: You must ALWAYS communicate in English ONLY. Never respond in Chinese or any other language.`,
+        translationPrompt: `Please translate the following English text to Chinese while maintaining the original meaning and tone:`
+    };
+}
 
 // 主应用类
 class EnglishAIAssistant {
@@ -29,13 +31,7 @@ class EnglishAIAssistant {
     
     init() {
         console.log('Initializing...');
-        
-        // 等待DOM完全加载
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => this.setupApp());
-        } else {
-            this.setupApp();
-        }
+        this.setupApp();
     }
     
     setupApp() {
@@ -83,7 +79,7 @@ class EnglishAIAssistant {
     }
     
     setupEventListeners(elements) {
-        const { sendButton, userInput, charCount } = elements;
+        const { sendButton, userInput } = elements;
         
         // 发送按钮点击事件
         sendButton.addEventListener('click', () => this.sendMessage());
@@ -176,7 +172,7 @@ class EnglishAIAssistant {
     }
     
     async callOpenAIAPI(userMessage) {
-        const systemPrompt = this.essayMode ? this.getEssaySystemPrompt() : CONFIG.systemPrompt;
+        const systemPrompt = this.essayMode ? this.getEssaySystemPrompt() : window.CONFIG.systemPrompt;
         
         const messages = [
             { role: 'system', content: systemPrompt },
@@ -185,18 +181,18 @@ class EnglishAIAssistant {
         ];
         
         const requestData = {
-            model: CONFIG.openai.model,
+            model: window.CONFIG.openai.model,
             messages: messages,
-            max_tokens: CONFIG.openai.maxTokens,
-            temperature: CONFIG.openai.temperature,
+            max_tokens: window.CONFIG.openai.maxTokens,
+            temperature: window.CONFIG.openai.temperature,
             stream: false
         };
         
         try {
-            const response = await fetch(CONFIG.openai.apiUrl, {
+            const response = await fetch(window.CONFIG.openai.apiUrl, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${CONFIG.openai.apiKey.trim()}`,
+                    'Authorization': `Bearer ${window.CONFIG.openai.apiKey.trim()}`,
                     'Content-Type': 'application/json',
                     'User-Agent': 'English-AI-Assistant/1.0'
                 },
@@ -230,7 +226,7 @@ class EnglishAIAssistant {
     }
     
     getEssaySystemPrompt() {
-        return `${CONFIG.systemPrompt}
+        return `${window.CONFIG.systemPrompt}
 
 You are now in Essay Mode. When writing essays, you must:
 
@@ -265,22 +261,22 @@ REMEMBER: Always respond in English ONLY.`;
     async translateToChinese(englishText) {
         try {
             const messages = [
-                { role: 'system', content: CONFIG.translationPrompt },
+                { role: 'system', content: window.CONFIG.translationPrompt },
                 { role: 'user', content: englishText }
             ];
             
             const requestData = {
-                model: CONFIG.openai.model,
+                model: window.CONFIG.openai.model,
                 messages: messages,
                 max_tokens: 500,
                 temperature: 0.3,
                 stream: false
             };
             
-            const response = await fetch(CONFIG.openai.apiUrl, {
+            const response = await fetch(window.CONFIG.openai.apiUrl, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${CONFIG.openai.apiKey.trim()}`,
+                    'Authorization': `Bearer ${window.CONFIG.openai.apiKey.trim()}`,
                     'Content-Type': 'application/json',
                     'User-Agent': 'English-AI-Assistant/1.0'
                 },
