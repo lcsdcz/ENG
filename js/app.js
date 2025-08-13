@@ -77,7 +77,7 @@ class EnglishAIAssistant {
     }
     
     setupEventListeners(elements) {
-        const { sendButton, userInput } = elements;
+        const { sendButton, userInput } = elements.found;
         
         // 发送按钮点击事件
         sendButton.addEventListener('click', () => this.sendMessage());
