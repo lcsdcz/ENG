@@ -8,7 +8,7 @@ const CONFIG = {
     openai: {
         apiKey: 'sk-FadRRn1rmnl5cBivgMuR7pvppW8bTxo83QAUJ0osdAEnxEXe',
         apiUrl: 'https://new1.588686.xyz/v1/chat/completions',
-        model: 'deepseek-ai/DeepSeek-V3-0324-fast',
+        model: 'gpt-3.5-turbo',
         maxTokens: 1000,
         temperature: 0.7,
         timeout: 30000
@@ -30,12 +30,7 @@ const CONFIG = {
         inappropriateKeywords: ['porn', 'gambling', 'drugs', 'illegal', '黄', '赌', '毒', '色情', '暴力', '赌博', '吸毒', '违法'],
         redirectMessage: "I'm sorry, but I cannot discuss inappropriate or illegal topics. Let's focus on something positive and constructive instead. What would you like to learn about today?"
     },
-    systemPrompt: `You are a helpful and positive English conversation AI assistant. You must:
-1. Only communicate in English
-2. Provide positive, uplifting content
-3. Strictly avoid any illegal content including pornography, gambling, drugs, or other harmful material
-4. Be encouraging and supportive in your responses
-5. Help users improve their English conversation skills`,
+    systemPrompt: `You are a helpful English conversation AI assistant. You must only communicate in English and provide positive, uplifting content. Help users improve their English conversation skills.`,
     translationPrompt: `Please translate the following English text to Chinese while maintaining the original meaning and tone:`,
     welcomeMessage: {
         english: "Hello! I'm your English conversation AI assistant. I'm here to help you improve your English skills through natural conversation. What would you like to talk about today?",
@@ -67,5 +62,57 @@ const CONFIG = {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = CONFIG;
 } else {
-    window.CONFIG = CONFIG;
+    window.CONFIG = {
+        openai: {
+            apiKey: 'sk-FadRRn1rmnl5cBivgMuR7pvppW8bTxo83QAUJ0osdAEnxEXe',
+            apiUrl: 'https://new1.588686.xyz/v1/chat/completions',
+            model: 'gpt-3.5-turbo',
+            maxTokens: 1000,
+            temperature: 0.7,
+            timeout: 30000
+        },
+        app: {
+            name: 'English AI Assistant',
+            version: '1.0.0',
+            language: 'en',
+            maxHistoryLength: 50
+        },
+        ui: {
+            theme: 'light',
+            fontSize: 'medium',
+            showTimestamps: true
+        },
+        filter: {
+            enabled: true,
+            blockedWords: ['porn', 'gambling', 'drugs', 'illegal'],
+            inappropriateKeywords: ['porn', 'gambling', 'drugs', 'illegal', '黄', '赌', '毒', '色情', '暴力', '赌博', '吸毒', '违法'],
+            redirectMessage: "I'm sorry, but I cannot discuss inappropriate or illegal topics. Let's focus on something positive and constructive instead. What would you like to learn about today?"
+        },
+        systemPrompt: `You are a helpful English conversation AI assistant. You must only communicate in English and provide positive, uplifting content. Help users improve their English conversation skills.`,
+        translationPrompt: `Please translate the following English text to Chinese while maintaining the original meaning and tone:`,
+        welcomeMessage: {
+            english: "Hello! I'm your English conversation AI assistant. I'm here to help you improve your English skills through natural conversation. What would you like to talk about today?",
+            chinese: "你好！我是你的英语对话AI助手。我在这里帮助你通过自然对话提高英语水平。你今天想聊什么？"
+        },
+        errorMessages: {
+            apiError: 'Sorry, I\'m having trouble connecting right now. Please try again.',
+            networkError: 'Network connection issue. Please check your internet connection.',
+            rateLimit: 'Too many requests. Please wait a moment before trying again.'
+        },
+        suggestedTopics: [
+            'Daily conversation',
+            'Travel and culture',
+            'Technology and innovation',
+            'Health and wellness',
+            'Education and learning',
+            'Business and career',
+            'Hobbies and interests',
+            'Current events'
+        ],
+        storageKeys: {
+            chatHistory: 'english_ai_chat_history',
+            userSettings: 'english_ai_user_settings',
+            conversationStats: 'english_ai_conversation_stats'
+        }
+    };
 }
