@@ -789,12 +789,18 @@ REMEMBER: You are an English AI assistant. You can understand Chinese input but 
     
     // 显示思考指示器
     showThinkingIndicator() {
+        console.log('showThinkingIndicator called');
+        
         // 移除已存在的思考指示器
         this.hideThinkingIndicator();
         
         const chatHistory = document.getElementById('chatHistory');
-        if (!chatHistory) return;
+        if (!chatHistory) {
+            console.error('chatHistory element not found in showThinkingIndicator');
+            return;
+        }
         
+        console.log('Creating thinking indicator...');
         const thinkingDiv = document.createElement('div');
         thinkingDiv.className = 'thinking-indicator';
         thinkingDiv.id = 'thinkingIndicator';
@@ -813,17 +819,23 @@ REMEMBER: You are an English AI assistant. You can understand Chinese input but 
             </div>
         `;
         
+        console.log('Adding thinking indicator to chatHistory');
         chatHistory.appendChild(thinkingDiv);
         
         // 滚动到底部
         this.scrollToBottom();
+        console.log('Thinking indicator added successfully');
     }
     
     // 隐藏思考指示器
     hideThinkingIndicator() {
+        console.log('hideThinkingIndicator called');
         const existingIndicator = document.getElementById('thinkingIndicator');
         if (existingIndicator) {
+            console.log('Removing existing thinking indicator');
             existingIndicator.remove();
+        } else {
+            console.log('No existing thinking indicator found');
         }
     }
     

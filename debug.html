@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>调试页面</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>调试页面</h1>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>测试思考指示器</h5>
+                    </div>
+                    <div class="card-body">
+                        <button id="showThinking" class="btn btn-primary me-2">显示思考指示器</button>
+                        <button id="hideThinking" class="btn btn-secondary me-2">隐藏思考指示器</button>
+                        <button id="testMessage" class="btn btn-success">测试消息</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>聊天区域</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="chatHistory" class="chat-history" style="height: 300px; overflow-y: auto;">
+                            <!-- 消息将在这里显示 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>控制台输出</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="console" style="background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; height: 200px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 简单的控制台输出函数
+        function log(message) {
+            const console = document.getElementById('console');
+            const time = new Date().toLocaleTimeString();
+            console.innerHTML += `[${time}] ${message}<br>`;
+            console.scrollTop = console.scrollHeight;
+        }
+        
+        // 模拟思考指示器功能
+        function showThinkingIndicator() {
+            log('显示思考指示器');
+            
+            const chatHistory = document.getElementById('chatHistory');
+            if (!chatHistory) {
+                log('错误: chatHistory 元素未找到');
+                return;
+            }
+            
+            // 移除已存在的思考指示器
+            hideThinkingIndicator();
+            
+            const thinkingDiv = document.createElement('div');
+            thinkingDiv.className = 'thinking-indicator';
+            thinkingDiv.id = 'thinkingIndicator';
+            
+            thinkingDiv.innerHTML = `
+                <div class="avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="content">
+                    <div class="text">AI正在思考中</div>
+                    <div class="dots">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+            `;
+            
+            chatHistory.appendChild(thinkingDiv);
+            log('思考指示器已添加');
+        }
+        
+        function hideThinkingIndicator() {
+            log('隐藏思考指示器');
+            const existingIndicator = document.getElementById('thinkingIndicator');
+            if (existingIndicator) {
+                existingIndicator.remove();
+                log('思考指示器已移除');
+            } else {
+                log('没有找到思考指示器');
+            }
+        }
+        
+        function addTestMessage() {
+            log('添加测试消息');
+            
+            const chatHistory = document.getElementById('chatHistory');
+            if (!chatHistory) {
+                log('错误: chatHistory 元素未找到');
+                return;
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ai-message';
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="message-content">
+                    <div class="message-text">这是一个测试消息，用来验证样式是否正确显示。</div>
+                </div>
+            `;
+            
+            chatHistory.appendChild(messageDiv);
+            log('测试消息已添加');
+        }
+        
+        // 事件监听器
+        document.getElementById('showThinking').addEventListener('click', showThinkingIndicator);
+        document.getElementById('hideThinking').addEventListener('click', hideThinkingIndicator);
+        document.getElementById('testMessage').addEventListener('click', addTestMessage);
+        
+        // 页面加载完成
+        document.addEventListener('DOMContentLoaded', function() {
+            log('页面加载完成');
+            log('开始测试...');
+        });
+    </script>
+</body>
+</html>

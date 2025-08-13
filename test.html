@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>样式测试页面</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="text-center mb-4">CSS样式测试页面</h1>
+        
+        <!-- 测试消息样式 -->
+        <div class="test-section">
+            <h3>消息样式测试</h3>
+            
+            <!-- 用户消息 -->
+            <div class="message user-message">
+                <div class="message-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="message-content">
+                    <div class="message-text">这是一个用户消息的测试，用来验证样式是否正确显示。</div>
+                </div>
+            </div>
+            
+            <!-- AI消息 -->
+            <div class="message ai-message">
+                <div class="message-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="message-content">
+                    <div class="message-text">这是一个AI消息的测试，用来验证样式是否正确显示。\n\n这里应该有一个换行。\n\n还有另一个换行。</div>
+                </div>
+            </div>
+            
+            <!-- 长文本测试 -->
+            <div class="message ai-message">
+                <div class="message-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="message-content">
+                    <div class="message-text">这是一个很长的消息测试，用来验证长文本的换行和显示效果。这个文本应该能够正确地自动换行，并且保持良好的可读性。我们来看看换行效果如何，以及文本的格式是否正确。</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 测试思考指示器 -->
+        <div class="test-section">
+            <h3>思考指示器测试</h3>
+            <div class="thinking-indicator">
+                <div class="avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="content">
+                    <div class="text">AI正在思考中</div>
+                    <div class="dots">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 测试作文模式 -->
+        <div class="test-section essay-mode">
+            <h3>作文模式测试</h3>
+            <div class="message ai-message">
+                <div class="message-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="message-content">
+                    <div class="message-text">这是一篇作文的测试，用来验证作文模式下的样式是否正确。作文模式应该有特殊的字体和格式设置，包括首行缩进和行间距等。</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 测试按钮样式 -->
+        <div class="test-section">
+            <h3>按钮样式测试</h3>
+            <button id="essayModeToggle" class="btn btn-outline-success btn-sm me-2">
+                <i class="fas fa-pen-fancy"></i>
+                <span>作文模式</span>
+            </button>
+            <button id="translationToggle" class="btn btn-outline-light btn-sm me-2">
+                <i class="fas fa-language"></i>
+                <span>中文翻译</span>
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        // 简单的交互测试
+        document.getElementById('essayModeToggle').addEventListener('click', function() {
+            this.classList.toggle('active');
+            document.body.classList.toggle('essay-mode');
+        });
+        
+        document.getElementById('translationToggle').addEventListener('click', function() {
+            this.classList.toggle('btn-outline-warning');
+        });
+    </script>
+</body>
+</html>
