@@ -311,8 +311,18 @@ class EnglishAIAssistant {
             messages: messages,
             max_tokens: CONFIG.openai.maxTokens || 1000,
             temperature: CONFIG.openai.temperature || 0.7,
-            stream: false
+            stream: false,
+            top_p: 1,
+            frequency_penalty: 0,
+            presence_penalty: 0
         };
+        
+        console.log('Sending API request:', {
+            url: CONFIG.openai.apiUrl,
+            model: requestData.model,
+            messages: requestData.messages,
+            max_tokens: requestData.max_tokens
+        });
         
         try {
             const response = await fetch(CONFIG.openai.apiUrl, {
@@ -328,10 +338,22 @@ class EnglishAIAssistant {
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('API Response Error:', response.status, response.statusText, errorText);
+                
+                // 尝试解析错误信息
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    if (errorJson.error && errorJson.error.message) {
+                        throw new Error(`API Error: ${errorJson.error.message}`);
+                    }
+                } catch (parseError) {
+                    // 如果无法解析JSON，使用原始错误文本
+                }
+                
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
             const result = await response.json();
+            console.log('API Response received:', result);
             
             if (result.choices && result.choices.length > 0) {
                 return result.choices[0].message.content;
@@ -362,8 +384,14 @@ class EnglishAIAssistant {
                 messages: messages,
                 max_tokens: 500,
                 temperature: 0.3,
-                stream: false
+                stream: false,
+                top_p: 1
             };
+            
+            console.log('Sending translation request:', {
+                model: requestData.model,
+                messages: requestData.messages
+            });
             
             const response = await fetch(CONFIG.openai.apiUrl, {
                 method: 'POST',
@@ -378,10 +406,22 @@ class EnglishAIAssistant {
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('Translation API Response Error:', response.status, response.statusText, errorText);
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                
+                // 尝试解析错误信息
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    if (errorJson.error && errorJson.error.message) {
+                        console.error('Translation API Error Details:', errorJson.error.message);
+                    }
+                } catch (parseError) {
+                    // 如果无法解析JSON，忽略
+                }
+                
+                return '翻译失败';
             }
             
             const result = await response.json();
+            console.log('Translation response received:', result);
             
             if (result.choices && result.choices.length > 0) {
                 return result.choices[0].message.content;
