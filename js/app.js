@@ -654,14 +654,27 @@ REMEMBER: You are an English AI assistant. You can understand Chinese input but 
     }
     
     renderAllMessages() {
-        // 清空聊天区域
+        console.log('renderAllMessages called');
+        
         const chatArea = document.getElementById('chatArea');
-        if (chatArea) {
-            chatArea.innerHTML = '';
+        if (!chatArea) {
+            console.error('chatArea element not found!');
+            return;
         }
         
-        // 重新渲染所有消息
-        this.chatHistory.forEach(msg => this.renderMessage(msg));
+        try {
+            // 清空聊天区域
+            const chatHistory = document.getElementById('chatHistory');
+            if (chatHistory) {
+                chatHistory.innerHTML = '';
+            }
+            
+            // 重新渲染所有消息
+            this.chatHistory.forEach(msg => this.renderMessage(msg));
+            console.log('All messages rendered successfully');
+        } catch (error) {
+            console.error('Error rendering all messages:', error);
+        }
     }
     
     renderMessage(message) {
@@ -669,49 +682,56 @@ REMEMBER: You are an English AI assistant. You can understand Chinese input but 
         
         const chatHistory = document.getElementById('chatHistory');
         if (!chatHistory) {
-            console.error('chatHistory element not found!');
+            console.error('chatHistory element not found in renderMessage!');
             return;
         }
         
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${message.role}-message`;
-        messageDiv.id = `message-${message.id}`;
-        
-        const avatar = document.createElement('div');
-        avatar.className = 'message-avatar';
-        
-        if (message.role === 'user') {
-            avatar.innerHTML = '<i class="fas fa-user"></i>';
-        } else {
-            avatar.innerHTML = '<i class="fas fa-robot"></i>';
+        try {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${message.role}-message`;
+            messageDiv.id = `message-${message.id}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            
+            if (message.role === 'user') {
+                avatar.innerHTML = '<i class="fas fa-user"></i>';
+            } else {
+                avatar.innerHTML = '<i class="fas fa-robot"></i>';
+            }
+            
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            
+            // 总是显示英文内容，支持自动换行
+            const textDiv = document.createElement('div');
+            textDiv.className = 'message-text';
+            
+            // 处理文本换行和格式
+            const formattedText = this.formatMessageText(message.content);
+            textDiv.innerHTML = formattedText;
+            
+            content.appendChild(textDiv);
+            
+            // 根据翻译开关决定是否显示中文翻译
+            if (this.translationEnabled && message.translation && message.role === 'ai') {
+                const translationDiv = document.createElement('div');
+                translationDiv.className = 'message-translation';
+                translationDiv.textContent = message.translation;
+                content.appendChild(translationDiv);
+            }
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(content);
+            
+            chatHistory.appendChild(messageDiv);
+            console.log('Message rendered and added to DOM successfully');
+            
+            // 滚动到底部
+            this.scrollToBottom();
+        } catch (error) {
+            console.error('Error rendering message:', error);
         }
-        
-        const content = document.createElement('div');
-        content.className = 'message-content';
-        
-        // 总是显示英文内容，支持自动换行
-        const textDiv = document.createElement('div');
-        textDiv.className = 'message-text';
-        
-        // 处理文本换行和格式
-        const formattedText = this.formatMessageText(message.content);
-        textDiv.innerHTML = formattedText;
-        
-        content.appendChild(textDiv);
-        
-        // 根据翻译开关决定是否显示中文翻译
-        if (this.translationEnabled && message.translation && message.role === 'ai') {
-            const translationDiv = document.createElement('div');
-            translationDiv.className = 'message-translation';
-            translationDiv.textContent = message.translation;
-            content.appendChild(translationDiv);
-        }
-        
-        messageDiv.appendChild(avatar);
-        messageDiv.appendChild(content);
-        
-        chatHistory.appendChild(messageDiv);
-        console.log('Message rendered and added to DOM');
     }
     
     // 格式化消息文本，支持换行和基本格式
@@ -791,40 +811,44 @@ REMEMBER: You are an English AI assistant. You can understand Chinese input but 
     showThinkingIndicator() {
         console.log('showThinkingIndicator called');
         
-        // 移除已存在的思考指示器
-        this.hideThinkingIndicator();
-        
-        const chatHistory = document.getElementById('chatHistory');
-        if (!chatHistory) {
-            console.error('chatHistory element not found in showThinkingIndicator');
-            return;
-        }
-        
-        console.log('Creating thinking indicator...');
-        const thinkingDiv = document.createElement('div');
-        thinkingDiv.className = 'thinking-indicator';
-        thinkingDiv.id = 'thinkingIndicator';
-        
-        thinkingDiv.innerHTML = `
-            <div class="avatar">
-                <i class="fas fa-robot"></i>
-            </div>
-            <div class="content">
-                <div class="text">AI正在思考中</div>
-                <div class="dots">
-                    <div class="dot"></div>
-                    <div class="dot"></div>
-                    <div class="dot"></div>
+        try {
+            // 移除已存在的思考指示器
+            this.hideThinkingIndicator();
+            
+            const chatHistory = document.getElementById('chatHistory');
+            if (!chatHistory) {
+                console.error('chatHistory element not found in showThinkingIndicator');
+                return;
+            }
+            
+            console.log('Creating thinking indicator...');
+            const thinkingDiv = document.createElement('div');
+            thinkingDiv.className = 'thinking-indicator';
+            thinkingDiv.id = 'thinkingIndicator';
+            
+            thinkingDiv.innerHTML = `
+                <div class="avatar">
+                    <i class="fas fa-robot"></i>
                 </div>
-            </div>
-        `;
-        
-        console.log('Adding thinking indicator to chatHistory');
-        chatHistory.appendChild(thinkingDiv);
-        
-        // 滚动到底部
-        this.scrollToBottom();
-        console.log('Thinking indicator added successfully');
+                <div class="content">
+                    <div class="text">AI正在思考中</div>
+                    <div class="dots">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+            `;
+            
+            console.log('Adding thinking indicator to chatHistory');
+            chatHistory.appendChild(thinkingDiv);
+            
+            // 滚动到底部
+            this.scrollToBottom();
+            console.log('Thinking indicator added successfully');
+        } catch (error) {
+            console.error('Error showing thinking indicator:', error);
+        }
     }
     
     // 隐藏思考指示器
@@ -868,8 +892,16 @@ REMEMBER: You are an English AI assistant. You can understand Chinese input but 
     }
     
     scrollToBottom() {
-        const chatHistory = document.getElementById('chatHistory');
-        chatHistory.scrollTop = chatHistory.scrollHeight;
+        try {
+            const chatHistory = document.getElementById('chatHistory');
+            if (chatHistory && chatHistory.scrollHeight) {
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+            } else {
+                console.warn('chatHistory element not found or scrollHeight is 0');
+            }
+        } catch (error) {
+            console.error('Error in scrollToBottom:', error);
+        }
     }
     
     // 本地存储相关方法
@@ -1269,11 +1301,38 @@ Now, please respond to the user's request in English ONLY:`;
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded event fired');
+    
     // 确保配置已经验证和修复
     validateAndFixConfig();
     
-    // 初始化AI助手
-    window.aiAssistant = new EnglishAIAssistant();
-    
-    console.log('English AI Assistant initialized successfully');
+    // 等待一小段时间确保所有元素都已加载
+    setTimeout(() => {
+        // 检查关键元素是否存在
+        const chatHistory = document.getElementById('chatHistory');
+        const sendButton = document.getElementById('sendButton');
+        const userInput = document.getElementById('userInput');
+        
+        if (!chatHistory) {
+            console.error('chatHistory element not found!');
+            return;
+        }
+        
+        if (!sendButton) {
+            console.error('sendButton element not found!');
+            return;
+        }
+        
+        if (!userInput) {
+            console.error('userInput element not found!');
+            return;
+        }
+        
+        console.log('All required elements found, initializing AI Assistant...');
+        
+        // 初始化AI助手
+        window.aiAssistant = new EnglishAIAssistant();
+        
+        console.log('English AI Assistant initialized successfully');
+    }, 100);
 });
