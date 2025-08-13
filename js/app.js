@@ -83,6 +83,18 @@ function validateAndFixConfig() {
     if (!CONFIG.systemPrompt) CONFIG.systemPrompt = "You are a helpful and positive English conversation AI assistant.";
     if (!CONFIG.translationPrompt) CONFIG.translationPrompt = "Please translate the following English text to Chinese while maintaining the original meaning and tone:";
     
+    // 验证API密钥格式
+    if (CONFIG.openai && CONFIG.openai.apiKey) {
+        const apiKey = CONFIG.openai.apiKey.trim();
+        if (!apiKey.startsWith('sk-')) {
+            console.warn('API密钥格式可能不正确，应该以sk-开头');
+        }
+        if (apiKey.length < 20) {
+            console.warn('API密钥长度过短，可能无效');
+        }
+        console.log('API密钥格式验证完成，长度:', apiKey.length);
+    }
+    
     console.log('Configuration validated and fixed:', CONFIG);
 }
 
@@ -306,13 +318,16 @@ class EnglishAIAssistant {
             const response = await fetch(CONFIG.openai.apiUrl, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${CONFIG.openai.apiKey}`,
-                    'Content-Type': 'application/json'
+                    'Authorization': `Bearer ${CONFIG.openai.apiKey.trim()}`,
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'English-AI-Assistant/1.0'
                 },
                 body: JSON.stringify(requestData)
             });
             
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error('API Response Error:', response.status, response.statusText, errorText);
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
@@ -353,13 +368,16 @@ class EnglishAIAssistant {
             const response = await fetch(CONFIG.openai.apiUrl, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${CONFIG.openai.apiKey}`,
-                    'Content-Type': 'application/json'
+                    'Authorization': `Bearer ${CONFIG.openai.apiKey.trim()}`,
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'English-AI-Assistant/1.0'
                 },
                 body: JSON.stringify(requestData)
             });
             
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Translation API Response Error:', response.status, response.statusText, errorText);
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
