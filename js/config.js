@@ -6,9 +6,9 @@
 
 const CONFIG = {
     openai: {
-        apiKey: 'sk-FadRRn1rmnl5cBivgMuR7pvppW8bTxo83QAUJ0osdAEnxEXe',
-        apiUrl: 'https://new1.588686.xyz/v1/chat/completions',
-        model: 'deepseek-chat',
+        apiKey: 'sk-oQ5JuAiv2D9SQZ0Y48LvJEUvqfuxjPR2weQJMOnF0IR7fkMQ',
+        apiUrl: 'https://gpt.soruxgpt.com/api/api',
+        model: 'gpt-4o',
         maxTokens: 1000,
         temperature: 0.7,
         timeout: 30000
@@ -64,9 +64,9 @@ if (typeof module !== 'undefined' && module.exports) {
 } else {
     window.CONFIG = {
         openai: {
-            apiKey: 'sk-FadRRn1rmnl5cBivgMuR7pvppW8bTxo83QAUJ0osdAEnxEXe',
-            apiUrl: 'https://new1.588686.xyz/v1/chat/completions',
-            model: 'deepseek-chat',
+            apiKey: 'sk-oQ5JuAiv2D9SQZ0Y48LvJEUvqfuxjPR2weQJMOnF0IR7fkMQ',
+            apiUrl: 'https://gpt.soruxgpt.com/api/api',
+            model: 'gpt-4o',
             maxTokens: 1000,
             temperature: 0.7,
             timeout: 30000

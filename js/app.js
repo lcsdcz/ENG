@@ -9,9 +9,9 @@ function validateAndFixConfig() {
         console.warn('CONFIG not found, creating fallback configuration');
         window.CONFIG = {
             openai: {
-                apiKey: 'sk-FadRRn1rmnl5cBivgMuR7pvppW8bTxo83QAUJ0osdAEnxEXe',
-                apiUrl: 'https://new1.588686.xyz/v1/chat/completions',
-                model: 'deepseek-chat',
+                apiKey: 'sk-oQ5JuAiv2D9SQZ0Y48LvJEUvqfuxjPR2weQJMOnF0IR7fkMQ',
+                apiUrl: 'https://gpt.soruxgpt.com/api/api',
+                model: 'gpt-4o',
                 maxTokens: 1000,
                 temperature: 0.7,
                 timeout: 30000
@@ -302,7 +302,7 @@ class EnglishAIAssistant {
         ];
         
         const requestData = {
-            model: CONFIG.openai.model || 'deepseek-chat',
+            model: CONFIG.openai.model || 'gpt-4o',
             messages: messages,
             max_tokens: CONFIG.openai.maxTokens || 1000,
             temperature: CONFIG.openai.temperature || 0.7,
@@ -419,7 +419,7 @@ class EnglishAIAssistant {
             ];
             
             const requestData = {
-                model: CONFIG.openai.model || 'deepseek-chat',
+                model: CONFIG.openai.model || 'gpt-4o',
                 messages: messages,
                 max_tokens: 500,
                 temperature: 0.3,
