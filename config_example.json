@@ -1,0 +1,29 @@
+{
+  "openai_config": {
+    "api_key": "your_api_key_here",
+    "api_url": "https://new1.588686.xyz/v1/chat/completions",
+    "model": "deepseek-ai/DeepSeek-V3-0324-fast",
+    "max_tokens": 1000,
+    "temperature": 0.7,
+    "timeout": 30
+  },
+  "conversation_config": {
+    "max_history_length": 40,
+    "recent_history_count": 10,
+    "enable_translation": true,
+    "auto_save_history": true
+  },
+  "filter_config": {
+    "inappropriate_keywords": [
+      "黄", "赌", "毒", "色情", "暴力", "赌博", "吸毒", "违法",
+      "porn", "gambling", "drugs", "violence", "illegal"
+    ],
+    "redirect_message": "I'm sorry, but I cannot discuss inappropriate or illegal topics. Let's focus on something positive and constructive instead. What would you like to learn about today?"
+  },
+  "ui_config": {
+    "show_english": true,
+    "show_chinese": true,
+    "show_timestamps": false,
+    "language": "zh-CN"
+  }
+}
