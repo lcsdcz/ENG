@@ -371,7 +371,16 @@ class EnglishAIAssistant {
             console.log('API Response received:', result);
             
             if (result.choices && result.choices.length > 0) {
-                return result.choices[0].message.content;
+                const aiResponse = result.choices[0].message.content;
+                
+                // 检查AI回复是否包含中文
+                if (this.containsChinese(aiResponse)) {
+                    console.warn('AI response contains Chinese, rejecting and requesting English only');
+                    // 重新请求，强调英语回复要求
+                    return await this.retryWithStricterPrompt(userMessage, systemPrompt);
+                }
+                
+                return aiResponse;
             } else {
                 throw new Error('API返回格式错误');
             }
@@ -397,32 +406,40 @@ class EnglishAIAssistant {
     
     // 获取作文模式的系统提示词
     getEssaySystemPrompt() {
-        return `You are an expert English writing tutor and essay generator. When writing essays, you must:
+        return `You are an expert English writing tutor and essay generator. CRITICAL RULE: You must ALWAYS respond in English ONLY. Never write in Chinese or any other language.
 
-1. **Structure & Format**: 
+When writing essays, you must:
+
+1. **Language Requirement (MANDATORY)**:
+   - ALWAYS write in English only
+   - NEVER use Chinese characters or any non-English text
+   - If the user asks in Chinese, still respond in English
+   - This is a strict rule that cannot be violated
+
+2. **Structure & Format**: 
    - Use proper essay structure (introduction, body paragraphs, conclusion)
    - Include clear topic sentences and supporting details
    - Use appropriate paragraph breaks and formatting
 
-2. **Language Quality**:
+3. **Language Quality**:
    - Use advanced vocabulary and sophisticated expressions
    - Vary sentence structures (simple, compound, complex sentences)
    - Employ proper grammar, punctuation, and spelling
    - Use academic and formal language appropriate for essays
 
-3. **Content Requirements**:
+4. **Content Requirements**:
    - Provide well-developed arguments with examples
    - Use transitional phrases to connect ideas
    - Maintain consistent tone and style throughout
    - Ensure logical flow and coherence
 
-4. **Writing Standards**:
+5. **Writing Standards**:
    - Aim for 300-500 words for standard essays
    - Use active voice when appropriate
    - Avoid repetitive language
    - Include relevant details and specific examples
 
-Always respond in English and focus on creating high-quality, well-structured essays that demonstrate excellent writing skills.`;
+REMEMBER: You are an English AI assistant. You can understand Chinese input but must ALWAYS respond in English. This is non-negotiable.`;
     }
     
     getLocalFallbackResponse(userMessage) {
@@ -1103,6 +1120,65 @@ Always respond in English and focus on creating high-quality, well-structured es
                 successDiv.remove();
             }
         }, 3000);
+    }
+
+    // 检查文本是否包含中文字符
+    containsChinese(text) {
+        return /[\u4e00-\u9fff]/.test(text);
+    }
+    
+    // 使用更严格的提示词重新请求
+    async retryWithStricterPrompt(userMessage, originalSystemPrompt) {
+        const stricterPrompt = `${originalSystemPrompt}
+
+URGENT: Your previous response contained Chinese characters. This is NOT allowed. 
+You must respond in English ONLY. If you cannot provide the content in English, 
+say "I apologize, but I can only provide responses in English. Please ask me to 
+write about this topic in English."
+
+Now, please respond to the user's request in English ONLY:`;
+        
+        const messages = [
+            { role: 'system', content: stricterPrompt },
+            { role: 'user', content: userMessage }
+        ];
+        
+        const requestData = {
+            model: CONFIG.openai.model || 'gpt-4o',
+            messages: messages,
+            max_tokens: CONFIG.openai.maxTokens || 1000,
+            temperature: 0.3, // 降低温度以获得更一致的回复
+            stream: false
+        };
+        
+        try {
+            const response = await fetch(CONFIG.openai.apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${CONFIG.openai.apiKey.trim()}`,
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'English-AI-Assistant/1.0'
+                },
+                body: JSON.stringify(requestData)
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.choices && result.choices.length > 0) {
+                    const retryResponse = result.choices[0].message.content;
+                    // 再次检查是否包含中文
+                    if (this.containsChinese(retryResponse)) {
+                        return "I apologize, but I can only provide responses in English. Please ask me to write about this topic in English.";
+                    }
+                    return retryResponse;
+                }
+            }
+        } catch (error) {
+            console.error('Retry API call failed:', error);
+        }
+        
+        // 如果重试失败，返回英语提示
+        return "I apologize, but I can only provide responses in English. Please ask me to write about this topic in English.";
     }
 }
 

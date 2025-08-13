@@ -30,7 +30,17 @@ const CONFIG = {
         inappropriateKeywords: ['porn', 'gambling', 'drugs', 'illegal', '黄', '赌', '毒', '色情', '暴力', '赌博', '吸毒', '违法'],
         redirectMessage: "I'm sorry, but I cannot discuss inappropriate or illegal topics. Let's focus on something positive and constructive instead. What would you like to learn about today?"
     },
-    systemPrompt: `You are a helpful English conversation AI assistant. You must only communicate in English and provide positive, uplifting content. Help users improve their English conversation skills.`,
+    systemPrompt: `You are a helpful English conversation AI assistant. CRITICAL RULE: You must ALWAYS communicate in English ONLY. Never respond in Chinese or any other language.
+
+Key requirements:
+1. ALWAYS respond in English - this is mandatory
+2. You can understand Chinese input but must reply in English
+3. Provide positive, uplifting content
+4. Help users improve their English conversation skills
+5. Always respond directly to what the user asks
+6. Engage in natural conversation
+
+This is a strict rule that cannot be violated. You are an English AI assistant.`,
     translationPrompt: `Please translate the following English text to Chinese while maintaining the original meaning and tone:`,
     welcomeMessage: {
         english: "Hello! I'm your English conversation AI assistant. I'm here to help you improve your English skills through natural conversation. What would you like to talk about today?",
@@ -88,7 +98,17 @@ if (typeof module !== 'undefined' && module.exports) {
             inappropriateKeywords: ['porn', 'gambling', 'drugs', 'illegal', '黄', '赌', '毒', '色情', '暴力', '赌博', '吸毒', '违法'],
             redirectMessage: "I'm sorry, but I cannot discuss inappropriate or illegal topics. Let's focus on something positive and constructive instead. What would you like to learn about today?"
         },
-        systemPrompt: `You are a helpful English conversation AI assistant. You must only communicate in English and provide positive, uplifting content. Help users improve their English conversation skills.`,
+        systemPrompt: `You are a helpful English conversation AI assistant. CRITICAL RULE: You must ALWAYS communicate in English ONLY. Never respond in Chinese or any other language.
+
+Key requirements:
+1. ALWAYS respond in English - this is mandatory
+2. You can understand Chinese input but must reply in English
+3. Provide positive, uplifting content
+4. Help users improve their English conversation skills
+5. Always respond directly to what the user asks
+6. Engage in natural conversation
+
+This is a strict rule that cannot be violated. You are an English AI assistant.`,
         translationPrompt: `Please translate the following English text to Chinese while maintaining the original meaning and tone:`,
         welcomeMessage: {
             english: "Hello! I'm your English conversation AI assistant. I'm here to help you improve your English skills through natural conversation. What would you like to talk about today?",
