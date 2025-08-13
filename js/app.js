@@ -77,7 +77,19 @@ class EnglishAIAssistant {
     }
     
     setupEventListeners(elements) {
-        const { sendButton, userInput } = elements.found;
+        // 兼容性获取，避免因某些原因未取到元素
+        let sendButton = (elements && elements.found && elements.found.sendButton) || document.getElementById('sendButton');
+        let userInput = (elements && elements.found && elements.found.userInput) || document.getElementById('userInput');
+
+        if (!sendButton || !userInput) {
+            console.error('setupEventListeners: missing elements', {
+                hasElementsObj: !!elements,
+                keysInFound: elements && elements.found ? Object.keys(elements.found) : null,
+                sendButton,
+                userInput
+            });
+            return; // 直接返回，避免后续报错
+        }
         
         // 发送按钮点击事件
         sendButton.addEventListener('click', () => this.sendMessage());
