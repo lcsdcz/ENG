@@ -145,7 +145,11 @@ class EnglishAIAssistant {
         // 检查内容过滤
         if (this.isInappropriateContent(message)) {
             this.addMessage('user', message, '');
-            this.addMessage('ai', CONFIG.filter.redirectMessage, '抱歉，我不能讨论不当或违法的话题。让我们专注于积极和建设性的事情吧。您今天想了解什么？');
+            // 安全检查：确保redirectMessage配置存在
+            const redirectMsg = CONFIG && CONFIG.filter && CONFIG.filter.redirectMessage 
+                ? CONFIG.filter.redirectMessage 
+                : "I'm sorry, but I cannot discuss inappropriate or illegal topics. Let's focus on something positive and constructive instead.";
+            this.addMessage('ai', redirectMsg, '抱歉，我不能讨论不当或违法的话题。让我们专注于积极和建设性的事情吧。您今天想了解什么？');
             userInput.value = '';
             this.updateCharCount(0);
             return;
@@ -188,6 +192,11 @@ class EnglishAIAssistant {
     }
     
     async callOpenAIAPI(userMessage) {
+        // 安全检查：确保必要的配置存在
+        if (!CONFIG || !CONFIG.openai || !CONFIG.systemPrompt) {
+            throw new Error('API configuration is incomplete');
+        }
+        
         const messages = [
             { role: 'system', content: CONFIG.systemPrompt },
             ...this.getRecentHistory(),
@@ -195,10 +204,10 @@ class EnglishAIAssistant {
         ];
         
         const requestData = {
-            model: CONFIG.openai.model,
+            model: CONFIG.openai.model || 'deepseek-ai/DeepSeek-V3-0324-fast',
             messages: messages,
-            max_tokens: CONFIG.openai.maxTokens,
-            temperature: CONFIG.openai.temperature,
+            max_tokens: CONFIG.openai.maxTokens || 1000,
+            temperature: CONFIG.openai.temperature || 0.7,
             stream: false
         };
         
@@ -231,13 +240,19 @@ class EnglishAIAssistant {
     
     async translateToChinese(englishText) {
         try {
+            // 安全检查：确保必要的配置存在
+            if (!CONFIG || !CONFIG.openai || !CONFIG.translationPrompt) {
+                console.warn('Translation configuration is incomplete');
+                return '翻译配置不完整';
+            }
+            
             const messages = [
                 { role: 'system', content: CONFIG.translationPrompt },
                 { role: 'user', content: englishText }
             ];
             
             const requestData = {
-                model: CONFIG.openai.model,
+                model: CONFIG.openai.model || 'deepseek-ai/DeepSeek-V3-0324-fast',
                 messages: messages,
                 max_tokens: 500,
                 temperature: 0.3,
@@ -281,9 +296,10 @@ class EnglishAIAssistant {
         
         this.chatHistory.push(message);
         
-        // 限制历史记录长度
-        if (this.chatHistory.length > CONFIG.app.maxHistoryLength) {
-            this.chatHistory = this.chatHistory.slice(-CONFIG.app.maxHistoryLength);
+        // 限制历史记录长度（添加安全检查）
+        const maxLength = CONFIG && CONFIG.app && CONFIG.app.maxHistoryLength ? CONFIG.app.maxHistoryLength : 50;
+        if (this.chatHistory.length > maxLength) {
+            this.chatHistory = this.chatHistory.slice(-maxLength);
         }
         
         // 渲染消息
@@ -349,7 +365,16 @@ class EnglishAIAssistant {
     }
     
     isInappropriateContent(content) {
-        if (!CONFIG.filter.enabled) return false;
+        // 安全检查：确保CONFIG和filter对象存在
+        if (!CONFIG || !CONFIG.filter || !CONFIG.filter.enabled) {
+            return false;
+        }
+        
+        // 安全检查：确保inappropriateKeywords数组存在
+        if (!CONFIG.filter.inappropriateKeywords || !Array.isArray(CONFIG.filter.inappropriateKeywords)) {
+            console.warn('Content filter keywords not properly configured');
+            return false;
+        }
         
         const lowerContent = content.toLowerCase();
         return CONFIG.filter.inappropriateKeywords.some(keyword => 
@@ -536,7 +561,15 @@ class EnglishAIAssistant {
     showWelcomeMessage() {
         // 如果这是第一次使用，显示欢迎消息
         if (this.chatHistory.length === 0) {
-            this.addMessage('ai', CONFIG.welcomeMessage.english, CONFIG.welcomeMessage.chinese);
+            // 安全检查：确保welcomeMessage配置存在
+            if (CONFIG && CONFIG.welcomeMessage) {
+                const englishMsg = CONFIG.welcomeMessage.english || CONFIG.welcomeMessage;
+                const chineseMsg = CONFIG.welcomeMessage.chinese || '';
+                this.addMessage('ai', englishMsg, chineseMsg);
+            } else {
+                // 备用欢迎消息
+                this.addMessage('ai', 'Hello! I\'m your English conversation AI assistant. How can I help you today?', '你好！我是你的英语对话AI助手。你今天想聊什么？');
+            }
         }
     }
 
