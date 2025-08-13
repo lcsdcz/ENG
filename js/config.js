@@ -16,7 +16,8 @@ const CONFIG = {
     app: {
         name: 'English AI Assistant',
         version: '1.0.0',
-        language: 'en'
+        language: 'en',
+        maxHistoryLength: 50
     },
     ui: {
         theme: 'light',
@@ -25,7 +26,9 @@ const CONFIG = {
     },
     filter: {
         enabled: true,
-        blockedWords: ['porn', 'gambling', 'drugs', 'illegal']
+        blockedWords: ['porn', 'gambling', 'drugs', 'illegal'],
+        inappropriateKeywords: ['porn', 'gambling', 'drugs', 'illegal', '黄', '赌', '毒', '色情', '暴力', '赌博', '吸毒', '违法'],
+        redirectMessage: "I'm sorry, but I cannot discuss inappropriate or illegal topics. Let's focus on something positive and constructive instead. What would you like to learn about today?"
     },
     systemPrompt: `You are a helpful and positive English conversation AI assistant. You must:
 1. Only communicate in English
@@ -34,7 +37,10 @@ const CONFIG = {
 4. Be encouraging and supportive in your responses
 5. Help users improve their English conversation skills`,
     translationPrompt: `Please translate the following English text to Chinese while maintaining the original meaning and tone:`,
-    welcomeMessage: 'Hello! I\'m your English conversation AI assistant. How can I help you today?',
+    welcomeMessage: {
+        english: "Hello! I'm your English conversation AI assistant. I'm here to help you improve your English skills through natural conversation. What would you like to talk about today?",
+        chinese: "你好！我是你的英语对话AI助手。我在这里帮助你通过自然对话提高英语水平。你今天想聊什么？"
+    },
     errorMessages: {
         apiError: 'Sorry, I\'m having trouble connecting right now. Please try again.',
         networkError: 'Network connection issue. Please check your internet connection.',
