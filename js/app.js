@@ -43,6 +43,7 @@ class EnglishAIAssistant {
         }
         
         console.log('All elements found, setting up event listeners');
+        console.log('Found elements:', elements.found);
         
         // 设置事件监听器
         this.setupEventListeners(elements);
@@ -69,6 +70,8 @@ class EnglishAIAssistant {
             }
         });
         
+        console.log('checkElements result:', { found, missing });
+        
         return {
             allFound: missing.length === 0,
             found,
@@ -92,40 +95,48 @@ class EnglishAIAssistant {
         }
         
         // 发送按钮点击事件
-        sendButton.addEventListener('click', () => this.sendMessage());
+        if (typeof sendButton.addEventListener === 'function') {
+            sendButton.addEventListener('click', () => this.sendMessage());
+        } else {
+            console.error('sendButton.addEventListener is not a function', sendButton);
+        }
         
         // 输入框事件
-        userInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                this.sendMessage();
-            }
-        });
-        
-        userInput.addEventListener('input', (e) => {
-            this.updateCharCount(e.target.value.length);
-        });
+        if (typeof userInput.addEventListener === 'function') {
+            userInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.sendMessage();
+                }
+            });
+            
+            userInput.addEventListener('input', (e) => {
+                this.updateCharCount(e.target.value.length);
+            });
+        } else {
+            console.error('userInput.addEventListener is not a function', userInput);
+        }
         
         // 翻译开关
         const translationToggle = document.getElementById('translationToggle');
-        if (translationToggle) {
+        if (translationToggle && typeof translationToggle.addEventListener === 'function') {
             translationToggle.addEventListener('click', () => this.toggleTranslation());
         }
         
         // 作文模式开关
         const essayModeToggle = document.getElementById('essayModeToggle');
-        if (essayModeToggle) {
+        if (essayModeToggle && typeof essayModeToggle.addEventListener === 'function') {
             essayModeToggle.addEventListener('click', () => this.toggleEssayMode());
         }
         
         // 功能按钮
         const exportChatBtn = document.getElementById('exportChatBtn');
-        if (exportChatBtn) {
+        if (exportChatBtn && typeof exportChatBtn.addEventListener === 'function') {
             exportChatBtn.addEventListener('click', () => this.exportChat());
         }
         
         const clearChatBtn = document.getElementById('clearChatBtn');
-        if (clearChatBtn) {
+        if (clearChatBtn && typeof clearChatBtn.addEventListener === 'function') {
             clearChatBtn.addEventListener('click', () => this.clearChat());
         }
     }
