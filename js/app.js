@@ -1,5 +1,5 @@
 /**
- * 英语对话AI助手 - 完全独立版本
+ * 英语对话AI助手 - 完全独立版本（含流式输出与超时控制）
  */
 
 // 主应用类
@@ -11,11 +11,13 @@ class EnglishAIAssistant {
                 apiKey: 'sk-oQ5JuAiv2D9SQZ0Y48LvJEUvqfuxjPR2weQJMOnF0IR7fkMQ',
                 apiUrl: 'https://gpt.soruxgpt.com/api/api/v1/chat/completions',
                 model: 'gpt-4o',
-                maxTokens: 1000,
+                maxTokens: 500,
                 temperature: 0.7
             },
             systemPrompt: `You are a helpful English conversation AI assistant. CRITICAL RULE: You must ALWAYS communicate in English ONLY. Never respond in Chinese or any other language.`,
-            translationPrompt: `Please translate the following English text to Chinese while maintaining the original meaning and tone:`
+            translationPrompt: `Please translate the following English text to Chinese while maintaining the original meaning and tone:`,
+            streaming: true,
+            requestTimeoutMs: 30000
         };
         
         this.chatHistory = [];
@@ -168,19 +170,19 @@ class EnglishAIAssistant {
         this.showLoading(true);
         
         try {
-            // 调用AI API
-            const response = await this.callOpenAIAPI(message);
+            let aiText = '';
+            if (this.config.streaming) {
+                aiText = await this.callOpenAIAPIStream(message);
+            } else {
+                aiText = await this.callOpenAIAPINonStream(message);
+            }
             
-            if (response) {
+            if (aiText) {
                 let chineseTranslation = '';
-                
-                // 根据翻译开关决定是否翻译
                 if (this.translationEnabled) {
-                    chineseTranslation = await this.translateToChinese(response);
+                    chineseTranslation = await this.translateToChinese(aiText);
                 }
-                
-                // 添加AI回复
-                this.addMessage('ai', response, chineseTranslation);
+                this.addMessage('ai', aiText, chineseTranslation);
             } else {
                 this.showError('AI回复失败，请重试');
             }
@@ -192,25 +194,23 @@ class EnglishAIAssistant {
         }
     }
     
-    async callOpenAIAPI(userMessage) {
+    // 非流式回退
+    async callOpenAIAPINonStream(userMessage) {
         const systemPrompt = this.essayMode ? this.getEssaySystemPrompt() : this.config.systemPrompt;
-        
         const messages = [
             { role: 'system', content: systemPrompt },
             ...this.getRecentHistory(),
             { role: 'user', content: userMessage }
         ];
-        
         const requestData = {
             model: this.config.openai.model,
-            messages: messages,
+            messages,
             max_tokens: this.config.openai.maxTokens,
             temperature: this.config.openai.temperature,
             stream: false
         };
-        
         try {
-            const response = await fetch(this.config.openai.apiUrl, {
+            const { response } = await this.fetchWithTimeout(this.config.openai.apiUrl, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${this.config.openai.apiKey.trim()}`,
@@ -219,33 +219,149 @@ class EnglishAIAssistant {
                 },
                 body: JSON.stringify(requestData)
             });
-            
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('API Error:', response.status, errorText);
                 return this.getLocalFallbackResponse(userMessage);
             }
-            
             const result = await response.json();
-            
             if (result.choices && result.choices.length > 0) {
                 const aiResponse = result.choices[0].message.content;
-                
-                // 检查是否包含中文
                 if (this.containsChinese(aiResponse)) {
                     return "I apologize, but I can only provide responses in English. Please ask me to write about this topic in English.";
                 }
-                
                 return aiResponse;
-            } else {
-                throw new Error('API返回格式错误');
             }
+            throw new Error('API返回格式错误');
         } catch (error) {
-            console.error('OpenAI API调用失败:', error);
+            console.error('OpenAI API（非流式）调用失败:', error);
             return this.getLocalFallbackResponse(userMessage);
         }
     }
-    
+
+    // 流式输出
+    async callOpenAIAPIStream(userMessage) {
+        const systemPrompt = this.essayMode ? this.getEssaySystemPrompt() : this.config.systemPrompt;
+        const messages = [
+            { role: 'system', content: systemPrompt },
+            ...this.getRecentHistory(),
+            { role: 'user', content: userMessage }
+        ];
+        const requestData = {
+            model: this.config.openai.model,
+            messages,
+            max_tokens: this.config.openai.maxTokens,
+            temperature: this.config.openai.temperature,
+            stream: true
+        };
+
+        // 先在界面放一个占位的AI消息
+        const placeholder = this.createAIMessagePlaceholder();
+        let fullText = '';
+
+        try {
+            const { response, controller, timeoutId } = await this.fetchWithTimeout(this.config.openai.apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.config.openai.apiKey.trim()}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'text/event-stream',
+                    'User-Agent': 'English-AI-Assistant/1.0'
+                },
+                body: JSON.stringify(requestData)
+            });
+
+            if (!response.ok || !response.body) {
+                clearTimeout(timeoutId);
+                controller.abort();
+                console.warn('流式返回不可用，回退到非流式');
+                const nonStream = await this.callOpenAIAPINonStream(userMessage);
+                this.updateStreamMessage(placeholder.id, nonStream);
+                return nonStream;
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+
+                const lines = buffer.split('\n');
+                // 保留最后一条不完整的行
+                buffer = lines.pop() || '';
+
+                for (const raw of lines) {
+                    const line = raw.trim();
+                    if (!line) continue;
+                    if (line.startsWith('data:')) {
+                        const data = line.replace(/^data:\s*/, '');
+                        if (data === '[DONE]') {
+                            break;
+                        }
+                        try {
+                            const json = JSON.parse(data);
+                            // 兼容OpenAI SSE格式：choices[0].delta.content
+                            const delta = json.choices && json.choices[0] && json.choices[0].delta ? json.choices[0].delta.content : '';
+                            if (delta) {
+                                fullText += delta;
+                                this.updateStreamMessage(placeholder.id, fullText);
+                            }
+                        } catch (e) {
+                            // 某些代理返回非JSON心跳/注释行，忽略
+                        }
+                    }
+                }
+            }
+
+            clearTimeout(timeoutId);
+            if (this.containsChinese(fullText)) {
+                fullText = "I apologize, but I can only provide responses in English. Please ask me to write about this topic in English.";
+                this.updateStreamMessage(placeholder.id, fullText);
+            }
+            return fullText || '...';
+        } catch (error) {
+            console.error('OpenAI API（流式）调用失败，回退到非流式:', error);
+            const nonStream = await this.callOpenAIAPINonStream(userMessage);
+            this.updateStreamMessage(placeholder.id, nonStream);
+            return nonStream;
+        }
+    }
+
+    // 发起带超时控制的fetch
+    async fetchWithTimeout(url, options) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.config.requestTimeoutMs);
+        const response = await fetch(url, { ...options, signal: controller.signal });
+        return { response, controller, timeoutId };
+    }
+
+    // 创建一个AI消息占位，用于流式更新
+    createAIMessagePlaceholder() {
+        const message = {
+            id: Date.now(),
+            role: 'ai',
+            content: '',
+            translation: '',
+            timestamp: new Date().toISOString()
+        };
+        this.chatHistory.push(message);
+        this.renderMessage(message);
+        this.scrollToBottom();
+        return message;
+    }
+
+    // 根据ID更新已渲染的消息文本（流式）
+    updateStreamMessage(messageId, text) {
+        const el = document.getElementById(`message-${messageId}`);
+        if (!el) return;
+        const textDiv = el.querySelector('.message-text');
+        if (!textDiv) return;
+        textDiv.innerHTML = this.formatMessageText(text);
+    }
+
     getEssaySystemPrompt() {
         return `${this.config.systemPrompt}
 
@@ -289,12 +405,12 @@ REMEMBER: Always respond in English ONLY.`;
             const requestData = {
                 model: this.config.openai.model,
                 messages: messages,
-                max_tokens: 500,
+                max_tokens: 300,
                 temperature: 0.3,
                 stream: false
             };
             
-            const response = await fetch(this.config.openai.apiUrl, {
+            const { response, timeoutId } = await this.fetchWithTimeout(this.config.openai.apiUrl, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${this.config.openai.apiKey.trim()}`,
@@ -303,6 +419,7 @@ REMEMBER: Always respond in English ONLY.`;
                 },
                 body: JSON.stringify(requestData)
             });
+            clearTimeout(timeoutId);
             
             if (!response.ok) {
                 return this.getLocalTranslation(englishText);
