@@ -32,9 +32,9 @@
                 <div class="search-controls">
                     <i class="fas fa-search"></i>
                     <div class="zoom-controls">
-                        <button class="btn btn-link btn-sm p-0" onclick="changeFontSize(1)">+</button>
+                        <button class="btn btn-link btn-sm p-0" id="increaseFontBtn">+</button>
                         <span class="separator">|</span>
-                        <button class="btn btn-link btn-sm p-0" onclick="changeFontSize(-1)">-</button>
+                        <button class="btn btn-link btn-sm p-0" id="decreaseFontBtn">-</button>
                     </div>
                 </div>
             </div>
@@ -97,7 +97,6 @@
                                 class="btn btn-primary" 
                                 type="button" 
                                 id="sendButton"
-                                onclick="sendMessage()"
                             >
                                 <i class="fas fa-paper-plane me-1"></i>
                                 发送
@@ -121,13 +120,13 @@
         <div class="row justify-content-center mt-4">
             <div class="col-lg-8">
                 <div class="d-flex justify-content-center gap-2 flex-wrap">
-                    <button class="btn btn-outline-secondary" onclick="exportChat()">
+                    <button class="btn btn-outline-secondary" id="exportChatBtn">
                         <i class="fas fa-download me-1"></i>导出对话
                     </button>
-                    <button class="btn btn-outline-secondary" onclick="clearChat()">
+                    <button class="btn btn-outline-secondary" id="clearChatBtn">
                         <i class="fas fa-trash me-1"></i>清空对话
                     </button>
-                    <button class="btn btn-outline-secondary" onclick="showSettings()">
+                    <button class="btn btn-outline-secondary" id="showSettingsBtn">
                         <i class="fas fa-cog me-1"></i>设置
                     </button>
                 </div>
@@ -241,7 +240,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
-                    <button type="button" class="btn btn-primary" onclick="saveSettings()">保存设置</button>
+                    <button type="button" class="btn btn-primary" id="saveSettingsBtn">保存设置</button>
                 </div>
             </div>
         </div>

@@ -82,6 +82,50 @@ class EnglishAIAssistant {
                 this.saveUserSettings();
             });
         }
+        
+        // 功能按钮事件监听器
+        const exportChatBtn = document.getElementById('exportChatBtn');
+        if (exportChatBtn) {
+            exportChatBtn.addEventListener('click', () => {
+                this.exportChat();
+            });
+        }
+        
+        const clearChatBtn = document.getElementById('clearChatBtn');
+        if (clearChatBtn) {
+            clearChatBtn.addEventListener('click', () => {
+                this.clearChat();
+            });
+        }
+        
+        const showSettingsBtn = document.getElementById('showSettingsBtn');
+        if (showSettingsBtn) {
+            showSettingsBtn.addEventListener('click', () => {
+                this.showSettings();
+            });
+        }
+        
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        if (saveSettingsBtn) {
+            saveSettingsBtn.addEventListener('click', () => {
+                this.saveSettings();
+            });
+        }
+        
+        // 字体大小调整按钮
+        const increaseFontBtn = document.getElementById('increaseFontBtn');
+        if (increaseFontBtn) {
+            increaseFontBtn.addEventListener('click', () => {
+                this.changeFontSize(1);
+            });
+        }
+        
+        const decreaseFontBtn = document.getElementById('decreaseFontBtn');
+        if (decreaseFontBtn) {
+            decreaseFontBtn.addEventListener('click', () => {
+                this.changeFontSize(-1);
+            });
+        }
     }
     
     async sendMessage() {
@@ -521,160 +565,113 @@ class EnglishAIAssistant {
             }
         }
     }
-}
-
-// 全局函数
-function showHelp() {
-    const helpModal = new bootstrap.Modal(document.getElementById('helpModal'));
-    helpModal.show();
-}
-
-function showStats() {
-    const statsModal = new bootstrap.Modal(document.getElementById('statsModal'));
-    const statsContent = document.getElementById('statsContent');
     
-    if (window.aiAssistant) {
-        const stats = window.aiAssistant.conversationStats;
-        statsContent.innerHTML = `
-            <div class="row text-center">
-                <div class="col-md-4">
-                    <div class="card bg-primary text-white">
-                        <div class="card-body">
-                            <h3>${stats.totalMessages}</h3>
-                            <p class="mb-0">总消息数</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card bg-success text-white">
-                        <div class="card-body">
-                            <h3>${stats.userMessages}</h3>
-                            <p class="mb-0">用户消息</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card bg-info text-white">
-                        <div class="card-body">
-                            <h3>${stats.aiMessages}</h3>
-                            <p class="mb-0">AI回复</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="mt-3">
-                <p><strong>开始时间：</strong> ${stats.firstMessageTime ? new Date(stats.firstMessageTime).toLocaleString() : '无'}</p>
-                <p><strong>最后时间：</strong> ${stats.lastMessageTime ? new Date(stats.lastMessageTime).toLocaleString() : '无'}</p>
-            </div>
-        `;
+    // 功能按钮方法
+    exportChat() {
+        if (this.chatHistory.length > 0) {
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            const filename = `english_ai_conversation_${timestamp}.txt`;
+            
+            let content = '英语对话AI助手 - 对话记录\n';
+            content += '='.repeat(50) + '\n\n';
+            
+            this.chatHistory.forEach(msg => {
+                const time = new Date(msg.timestamp).toLocaleString();
+                const role = msg.role === 'user' ? '👤 您' : '🤖 AI';
+                
+                content += `[${time}] ${role}:\n`;
+                content += `${msg.content}\n`;
+                
+                if (msg.translation) {
+                    content += `翻译: ${msg.translation}\n`;
+                }
+                
+                content += '\n';
+            });
+            
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            this.showSuccessMessage(`对话记录已导出到: ${filename}`);
+        } else {
+            alert('暂无对话记录可导出');
+        }
     }
     
-    statsModal.show();
-}
-
-function showSettings() {
-    const settingsModal = new bootstrap.Modal(document.getElementById('settingsModal'));
-    settingsModal.show();
-}
-
-function saveSettings() {
-    if (window.aiAssistant) {
-        window.aiAssistant.userSettings.showEnglish = document.getElementById('showEnglish').checked;
-        window.aiAssistant.userSettings.showChinese = document.getElementById('showChinese').checked;
-        window.aiAssistant.userSettings.autoSave = document.getElementById('autoSave').checked;
-        window.aiAssistant.saveUserSettings();
+    clearChat() {
+        if (confirm('确定要清空所有对话历史吗？此操作不可恢复。')) {
+            this.chatHistory = [];
+            const chatHistory = document.getElementById('chatHistory');
+            if (chatHistory) {
+                chatHistory.innerHTML = '';
+            }
+            this.saveChatHistory();
+            this.updateStats();
+            this.showWelcomeMessage();
+        }
+    }
+    
+    showSettings() {
+        const settingsModal = new bootstrap.Modal(document.getElementById('settingsModal'));
+        settingsModal.show();
+    }
+    
+    saveSettings() {
+        this.userSettings.showEnglish = document.getElementById('showEnglish').checked;
+        this.userSettings.showChinese = document.getElementById('showChinese').checked;
+        this.userSettings.autoSave = document.getElementById('autoSave').checked;
+        this.saveUserSettings();
         
         // 重新渲染消息以应用新设置
         const chatHistory = document.getElementById('chatHistory');
-        chatHistory.innerHTML = '';
-        window.aiAssistant.chatHistory.forEach(msg => window.aiAssistant.renderMessage(msg));
+        if (chatHistory) {
+            chatHistory.innerHTML = '';
+            this.chatHistory.forEach(msg => this.renderMessage(msg));
+        }
         
         const settingsModal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
-        settingsModal.hide();
+        if (settingsModal) {
+            settingsModal.hide();
+        }
         
-        // 显示成功消息
+        this.showSuccessMessage('设置已保存');
+    }
+    
+    changeFontSize(delta) {
+        const chatHistory = document.getElementById('chatHistory');
+        if (chatHistory) {
+            const currentSize = parseInt(window.getComputedStyle(chatHistory).fontSize) || 16;
+            const newSize = Math.max(12, Math.min(24, currentSize + delta));
+            chatHistory.style.fontSize = newSize + 'px';
+        }
+    }
+    
+    showSuccessMessage(message) {
         const successDiv = document.createElement('div');
         successDiv.className = 'alert alert-success alert-dismissible fade show';
         successDiv.innerHTML = `
             <i class="fas fa-check-circle me-2"></i>
-            设置已保存
+            ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
         
         const container = document.querySelector('.container');
-        container.insertBefore(successDiv, container.firstChild);
+        if (container) {
+            container.insertBefore(successDiv, container.firstChild);
+        }
         
         setTimeout(() => {
             if (successDiv.parentNode) {
                 successDiv.remove();
             }
         }, 3000);
-    }
-}
-
-function exportChat() {
-    if (window.aiAssistant && window.aiAssistant.chatHistory.length > 0) {
-        const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-        const filename = `english_ai_conversation_${timestamp}.txt`;
-        
-        let content = '英语对话AI助手 - 对话记录\n';
-        content += '='.repeat(50) + '\n\n';
-        
-        window.aiAssistant.chatHistory.forEach(msg => {
-            const time = new Date(msg.timestamp).toLocaleString();
-            const role = msg.role === 'user' ? '👤 您' : '🤖 AI';
-            
-            content += `[${time}] ${role}:\n`;
-            content += `${msg.content}\n`;
-            
-            if (msg.translation) {
-                content += `翻译: ${msg.translation}\n`;
-            }
-            
-            content += '\n';
-        });
-        
-        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        // 显示成功消息
-        const successDiv = document.createElement('div');
-        successDiv.className = 'alert alert-success alert-dismissible fade show';
-        successDiv.innerHTML = `
-            <i class="fas fa-download me-2"></i>
-            对话记录已导出到: ${filename}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        
-        const container = document.querySelector('.container');
-        container.insertBefore(successDiv, container.firstChild);
-        
-        setTimeout(() => {
-            if (successDiv.parentNode) {
-                successDiv.remove();
-            }
-        }, 5000);
-    } else {
-        alert('暂无对话记录可导出');
-    }
-}
-
-function clearChat() {
-    if (confirm('确定要清空所有对话历史吗？此操作不可恢复。')) {
-        if (window.aiAssistant) {
-            window.aiAssistant.chatHistory = [];
-            document.getElementById('chatHistory').innerHTML = '';
-            window.aiAssistant.saveChatHistory();
-            window.aiAssistant.updateStats();
-            window.aiAssistant.showWelcomeMessage();
-        }
     }
 }
 
