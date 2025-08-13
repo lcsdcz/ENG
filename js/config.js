@@ -7,7 +7,7 @@
 const CONFIG = {
     openai: {
         apiKey: 'sk-oQ5JuAiv2D9SQZ0Y48LvJEUvqfuxjPR2weQJMOnF0IR7fkMQ',
-        apiUrl: 'https://gpt.soruxgpt.com/api/api',
+        apiUrl: 'https://gpt.soruxgpt.com/api/api/v1/chat/completions',
         model: 'gpt-4o',
         maxTokens: 1000,
         temperature: 0.7,
@@ -65,7 +65,7 @@ if (typeof module !== 'undefined' && module.exports) {
     window.CONFIG = {
         openai: {
             apiKey: 'sk-oQ5JuAiv2D9SQZ0Y48LvJEUvqfuxjPR2weQJMOnF0IR7fkMQ',
-            apiUrl: 'https://gpt.soruxgpt.com/api/api',
+            apiUrl: 'https://gpt.soruxgpt.com/api/api/v1/chat/completions',
             model: 'gpt-4o',
             maxTokens: 1000,
             temperature: 0.7,
