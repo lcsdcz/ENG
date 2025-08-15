@@ -6,7 +6,10 @@ const API_CONFIG = {
   api_key: process.env.OPENAI_API_KEY,
   api_url: process.env.OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions',
   model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
-  temperature: parseFloat(process.env.OPENAI_TEMPERATURE) || 0.7
+  temperature: parseFloat(process.env.OPENAI_TEMPERATURE) || 0.7,
+  max_tokens: parseInt(process.env.OPENAI_MAX_TOKENS || '512', 10),
+  request_timeout_ms: parseInt(process.env.UPSTREAM_TIMEOUT_MS || '20000', 10),
+  retry_count: parseInt(process.env.UPSTREAM_RETRY || '2', 10)
 };
 
 export default async function handler(req, res) {
@@ -47,9 +50,7 @@ export default async function handler(req, res) {
       stream
     };
 
-    if (max_tokens) {
-      requestData.max_tokens = max_tokens;
-    }
+    requestData.max_tokens = max_tokens || API_CONFIG.max_tokens;
 
     if (stream) {
       // 流式响应
@@ -75,7 +76,7 @@ async function handleNormalResponse(requestData, res) {
       temperature: requestData.temperature
     });
 
-    const response = await fetch(API_CONFIG.api_url, {
+    const response = await fetchWithTimeoutAndRetry(API_CONFIG.api_url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${API_CONFIG.api_key}`,
@@ -121,7 +122,7 @@ async function handleNormalResponse(requestData, res) {
 
 async function handleStreamResponse(requestData, res) {
   try {
-    const response = await fetch(API_CONFIG.api_url, {
+    const response = await fetchWithTimeoutAndRetry(API_CONFIG.api_url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${API_CONFIG.api_key}`,
@@ -168,4 +169,41 @@ async function handleStreamResponse(requestData, res) {
     console.error('Stream response error:', error);
     return res.status(500).json({ error: error.message });
   }
+}
+
+// 带超时与重试的fetch（处理 429/5xx/网络错误/超时）
+async function fetchWithTimeoutAndRetry(url, options) {
+  const retryableStatus = new Set([429, 500, 502, 503, 504]);
+  let lastError;
+
+  for (let attempt = 0; attempt <= API_CONFIG.retry_count; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.request_timeout_ms);
+    try {
+      const resp = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (!resp.ok && retryableStatus.has(resp.status) && attempt < API_CONFIG.retry_count) {
+        const waitMs = 700 * Math.pow(2, attempt);
+        console.warn(`上游返回 ${resp.status}，第${attempt + 1}次重试，等待 ${waitMs}ms`);
+        await new Promise(r => setTimeout(r, waitMs));
+        continue;
+      }
+      return resp;
+    } catch (err) {
+      clearTimeout(timeoutId);
+      lastError = err;
+      if (err.name === 'AbortError') {
+        console.warn('上游请求超时，准备重试');
+      } else {
+        console.warn('上游请求异常，准备重试:', err.message);
+      }
+      if (attempt < API_CONFIG.retry_count) {
+        const waitMs = 700 * Math.pow(2, attempt);
+        await new Promise(r => setTimeout(r, waitMs));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastError || new Error('上游请求失败');
 }
