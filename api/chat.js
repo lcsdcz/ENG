@@ -43,15 +43,34 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'API key not configured' });
     }
 
+    // 兼容模式：始终只转发“最后一条用户消息”，不带系统提示与历史
+    let lastUserContent = '';
+    try {
+      if (Array.isArray(messages)) {
+        for (let i = messages.length - 1; i >= 0; i -= 1) {
+          if (messages[i] && messages[i].role === 'user' && typeof messages[i].content === 'string') {
+            lastUserContent = messages[i].content;
+            break;
+          }
+        }
+      }
+    } catch {}
+
+    if (!lastUserContent) {
+      return res.status(400).json({ error: 'No user message provided' });
+    }
+
     const requestData = {
       model: API_CONFIG.model,
-      messages,
+      messages: [
+        { role: 'user', content: lastUserContent }
+      ],
       temperature: API_CONFIG.temperature,
       // 强制非流式
       stream: false
     };
 
-    requestData.max_tokens = max_tokens || API_CONFIG.max_tokens;
+    requestData.max_tokens = Math.min(300, max_tokens || API_CONFIG.max_tokens || 300);
 
     // 一律走非流式响应
     return await handleNormalResponse(requestData, res);
