@@ -12,6 +12,15 @@ const API_CONFIG = {
   retry_count: parseInt(process.env.UPSTREAM_RETRY || '2', 10)
 };
 
+// 英语限定系统提示（能理解中文，但只用英文回复）
+const ENGLISH_ONLY_PROMPT = [
+  'You are a helpful English conversation AI assistant.',
+  'CRITICAL RULES:',
+  '- Always reply in English ONLY. Do not include any Chinese in your output.',
+  '- The user may type in Chinese. You MUST fully understand Chinese input and respond in clear, natural English.',
+  '- Do not ask the user to switch languages; just answer in English.',
+].join(' ');
+
 export default async function handler(req, res) {
   // 设置CORS和安全头
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -63,6 +72,7 @@ export default async function handler(req, res) {
     const requestData = {
       model: API_CONFIG.model,
       messages: [
+        { role: 'system', content: ENGLISH_ONLY_PROMPT },
         { role: 'user', content: lastUserContent }
       ],
       temperature: API_CONFIG.temperature,
