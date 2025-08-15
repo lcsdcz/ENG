@@ -8,9 +8,9 @@ class EnglishAIAssistant {
         // 内置配置
         this.config = {
             openai: {
-                apiKey: 'sk-oQ5JuAiv2D9SQZ0Y48LvJEUvqfuxjPR2weQJMOnF0IR7fkMQ',
-                apiUrl: 'https://gpt.soruxgpt.com/api/api/v1/chat/completions',
-                model: 'gpt-4o',
+                apiKey: 'sk-FadRRn1rmnl5cBivgMuR7pvppW8bTxo83QAUJ0osdAEnxEXe',
+                apiUrl: 'https://new1.588686.xyz/v1/chat/completions',
+                model: 'deepseek-ai/DeepSeek-V3-0324-fast',
                 maxTokens: null, // 无上限
                 temperature: 0.7
             },
@@ -175,14 +175,8 @@ class EnglishAIAssistant {
         
         try {
             // 强制使用流式输出，实现实时显示
-            const aiText = await this.callOpenAIAPIStream(message);
-            
-            if (aiText) {
-                // 不再需要翻译，直接添加AI消息
-                this.addMessage('ai', aiText, '');
-            } else {
-                this.showError('AI回复失败，请重试');
-            }
+            await this.callOpenAIAPIStream(message);
+            // 流式输出已经通过updateStreamMessage实时显示，不需要再addMessage
         } catch (error) {
             console.error('API调用错误:', error);
             this.showError('网络错误，请检查网络连接后重试');
@@ -274,7 +268,7 @@ class EnglishAIAssistant {
                 console.warn('流式返回不可用，回退到非流式');
                 const nonStream = await this.callOpenAIAPINonStream(userMessage);
                 this.updateStreamMessage(placeholder.id, nonStream);
-                return nonStream;
+                return; // 不返回文本，避免重复显示
             }
 
             const reader = response.body.getReader();
@@ -318,17 +312,21 @@ class EnglishAIAssistant {
                 fullText = "I apologize, but I can only provide responses in English. Please ask me to write about this topic in English.";
                 this.updateStreamMessage(placeholder.id, fullText);
             }
-            return fullText || '...';
+            
+            // 流式输出完成，将最终消息添加到历史记录
+            this.finalizeStreamMessage(placeholder.id, fullText || '...');
+            
         } catch (error) {
             console.error('OpenAI API（流式）调用失败，回退到非流式:', error);
             try {
                 const nonStream = await this.callOpenAIAPINonStream(userMessage);
                 this.updateStreamMessage(placeholder.id, nonStream);
-                return nonStream;
+                this.finalizeStreamMessage(placeholder.id, nonStream);
             } catch (fallbackError) {
                 console.error('回退到非流式也失败:', fallbackError);
-                this.updateStreamMessage(placeholder.id, this.getLocalFallbackResponse(userMessage));
-                return this.getLocalFallbackResponse(userMessage);
+                const fallbackResponse = this.getLocalFallbackResponse(userMessage);
+                this.updateStreamMessage(placeholder.id, fallbackResponse);
+                this.finalizeStreamMessage(placeholder.id, fallbackResponse);
             }
         }
     }
@@ -369,10 +367,48 @@ class EnglishAIAssistant {
         // 自动滚动到底部，确保用户能看到最新的回复
         this.scrollToBottom();
         
-        // 添加打字机效果的光标（可选）
+        // 添加打字机效果的光标
         if (text && !text.endsWith('\n')) {
             textDiv.innerHTML += '<span class="typing-cursor">|</span>';
         }
+    }
+
+    // 流式输出完成后，将消息添加到历史记录并移除光标
+    finalizeStreamMessage(messageId, finalText) {
+        const el = document.getElementById(`message-${messageId}`);
+        if (!el) return;
+        const textDiv = el.querySelector('.message-text');
+        if (!textDiv) return;
+        
+        // 移除打字光标，显示最终文本
+        textDiv.innerHTML = this.formatMessageText(finalText);
+        
+        // 将消息添加到历史记录
+        const message = {
+            id: messageId,
+            role: 'ai',
+            content: finalText,
+            translation: '',
+            timestamp: new Date().toISOString()
+        };
+        
+        // 检查是否已经在历史记录中
+        const existingIndex = this.chatHistory.findIndex(msg => msg.id === messageId);
+        if (existingIndex >= 0) {
+            // 更新现有消息
+            this.chatHistory[existingIndex] = message;
+        } else {
+            // 添加新消息
+            this.chatHistory.push(message);
+        }
+        
+        // 保存历史记录
+        this.saveChatHistory();
+        
+        // 滚动到底部
+        this.scrollToBottom();
+        
+        console.log('流式消息已完成:', finalText.substring(0, 50) + '...');
     }
 
     getEssaySystemPrompt() {

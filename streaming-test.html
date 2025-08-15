@@ -217,6 +217,7 @@
                 try {
                     // 模拟流式API调用
                     await this.simulateStreamingResponse(message);
+                    // 流式输出已经通过updateStreamMessage实时显示，不需要再addMessage
                     
                 } catch (error) {
                     console.error('模拟API调用错误:', error);
@@ -256,8 +257,8 @@
                     }
                 }
                 
-                // 移除打字光标
-                this.updateStreamMessage(placeholder.id, fullText.trim());
+                // 移除打字光标，完成流式输出
+                this.finalizeStreamMessage(placeholder.id, fullText.trim());
             }
 
             createAIMessagePlaceholder() {
@@ -289,6 +290,21 @@
                 if (text && !text.endsWith('\n')) {
                     textDiv.innerHTML += '<span class="typing-cursor">|</span>';
                 }
+            }
+
+            finalizeStreamMessage(messageId, finalText) {
+                const el = document.getElementById(`message-${messageId}`);
+                if (!el) return;
+                const textDiv = el.querySelector('.message-text');
+                if (!textDiv) return;
+                
+                // 移除打字光标，显示最终文本
+                textDiv.innerHTML = this.formatMessageText(finalText);
+                
+                // 滚动到底部
+                this.scrollToBottom();
+                
+                console.log('流式消息已完成:', finalText.substring(0, 50) + '...');
             }
 
             showLoading(show) {
