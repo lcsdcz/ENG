@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>流式输出测试</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .chat-area {
+            height: 500px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            overflow-y: auto;
+            background-color: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .input-group {
+            margin-bottom: 10px;
+        }
+        
+        .test-info {
+            background-color: rgba(255, 255, 255, 0.95);
+            border: 1px solid #b3d9ff;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .message {
+            display: flex;
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 0.5s ease;
+        }
+        
+        .user-message {
+            flex-direction: row-reverse;
+        }
+        
+        .ai-message {
+            flex-direction: row;
+        }
+        
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 10px;
+            font-size: 1.2rem;
+        }
+        
+        .user-message .message-avatar {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .ai-message .message-avatar {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+        }
+        
+        .user-message .message-content {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .ai-message .message-content {
+            background-color: #f8f9fa;
+            color: #212529;
+            border: 1px solid #dee2e6;
+        }
+        
+        .typing-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.2em;
+            background-color: #007bff;
+            animation: blink 1s infinite;
+            margin-left: 2px;
+            vertical-align: text-bottom;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h2 class="text-white text-center mb-4">流式输出测试</h2>
+        
+        <div class="test-info">
+            <h5>测试说明：</h5>
+            <ul>
+                <li>输入消息后点击发送，观察AI回复的流式输出效果</li>
+                <li>AI回复会逐字显示，带有打字机光标效果</li>
+                <li>回复无长度限制，支持长文本实时显示</li>
+                <li>不再有翻译功能，纯英文对话</li>
+            </ul>
+        </div>
+
+        <div class="chat-area" id="chatHistory">
+            <p class="text-muted text-center">聊天记录将显示在这里...</p>
+        </div>
+
+        <div class="input-group">
+            <textarea 
+                id="userInput" 
+                class="form-control" 
+                placeholder="输入测试消息..."
+                rows="3"
+            ></textarea>
+            <button 
+                class="btn btn-primary" 
+                type="button" 
+                id="sendButton"
+            >
+                <i class="fas fa-paper-plane me-1"></i>
+                发送
+            </button>
+        </div>
+
+        <div class="mt-3 text-center">
+            <button class="btn btn-secondary me-2" onclick="testStreaming()">测试流式输出</button>
+            <button class="btn btn-warning me-2" onclick="clearChat()">清空聊天</button>
+            <button class="btn btn-info" onclick="testLongResponse()">测试长回复</button>
+        </div>
+    </div>
+
+    <script>
+        class StreamingTestAssistant {
+            constructor() {
+                this.isLoading = false;
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.showWelcomeMessage();
+            }
+
+            setupEventListeners() {
+                const sendButton = document.getElementById('sendButton');
+                const userInput = document.getElementById('userInput');
+
+                if (sendButton) {
+                    sendButton.addEventListener('click', () => this.sendMessage());
+                }
+
+                if (userInput) {
+                    userInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            this.sendMessage();
+                        }
+                    });
+                }
+            }
+
+            async sendMessage() {
+                const userInput = document.getElementById('userInput');
+                const message = userInput.value.trim();
+                
+                if (!message) {
+                    alert('请输入内容');
+                    return;
+                }
+                
+                if (this.isLoading) {
+                    alert('请等待AI回复完成');
+                    return;
+                }
+                
+                console.log('Sending message:', message);
+                
+                // 添加用户消息
+                this.addMessage('user', message);
+                
+                // 清空输入框
+                userInput.value = '';
+                
+                // 显示加载状态
+                this.showLoading(true);
+                
+                try {
+                    // 模拟流式API调用
+                    await this.simulateStreamingResponse(message);
+                    
+                } catch (error) {
+                    console.error('模拟API调用错误:', error);
+                    alert('网络错误，请检查网络连接后重试');
+                } finally {
+                    // 确保在所有情况下都重置加载状态
+                    this.showLoading(false);
+                    console.log('Loading state reset to false');
+                }
+            }
+
+            async simulateStreamingResponse(userMessage) {
+                // 创建AI消息占位符
+                const placeholder = this.createAIMessagePlaceholder();
+                
+                // 模拟AI回复内容
+                const responses = [
+                    `Thank you for your message: "${userMessage}". I understand what you're asking about. `,
+                    `Let me provide you with a comprehensive response. This is a detailed explanation that demonstrates how the streaming output works. `,
+                    `As you can see, the text appears gradually, word by word, just like a real AI assistant typing in real-time. `,
+                    `This creates a more engaging and interactive experience for users. The response can be as long as needed without any character limits. `,
+                    `I hope this streaming demonstration helps you understand how the new feature works. Feel free to ask me anything else!`
+                ];
+                
+                let fullText = '';
+                
+                for (const response of responses) {
+                    // 逐段显示，模拟真实的流式输出
+                    const words = response.split(' ');
+                    
+                    for (const word of words) {
+                        fullText += word + ' ';
+                        this.updateStreamMessage(placeholder.id, fullText);
+                        
+                        // 随机延迟，模拟真实的打字速度
+                        await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 100));
+                    }
+                }
+                
+                // 移除打字光标
+                this.updateStreamMessage(placeholder.id, fullText.trim());
+            }
+
+            createAIMessagePlaceholder() {
+                const message = {
+                    id: Date.now(),
+                    role: 'ai',
+                    content: '',
+                    timestamp: new Date().toISOString()
+                };
+                
+                this.renderMessage(message);
+                this.scrollToBottom();
+                return message;
+            }
+
+            updateStreamMessage(messageId, text) {
+                const el = document.getElementById(`message-${messageId}`);
+                if (!el) return;
+                const textDiv = el.querySelector('.message-text');
+                if (!textDiv) return;
+                
+                // 实时更新文本内容
+                textDiv.innerHTML = this.formatMessageText(text);
+                
+                // 自动滚动到底部
+                this.scrollToBottom();
+                
+                // 添加打字机效果的光标
+                if (text && !text.endsWith('\n')) {
+                    textDiv.innerHTML += '<span class="typing-cursor">|</span>';
+                }
+            }
+
+            showLoading(show) {
+                this.isLoading = show;
+                console.log('showLoading called with:', show);
+                
+                const sendButton = document.getElementById('sendButton');
+                if (sendButton) {
+                    sendButton.disabled = show;
+                    sendButton.innerHTML = show ? 
+                        '<i class="fas fa-spinner fa-spin me-1"></i>发送中...' : 
+                        '<i class="fas fa-paper-plane me-1"></i>发送';
+                    console.log('Send button updated:', show ? 'loading' : 'ready');
+                }
+            }
+
+            addMessage(role, content) {
+                const message = {
+                    id: Date.now(),
+                    role: role,
+                    content: content,
+                    timestamp: new Date().toISOString()
+                };
+                
+                this.renderMessage(message);
+                this.scrollToBottom();
+            }
+
+            renderMessage(message) {
+                const chatHistory = document.getElementById('chatHistory');
+                if (!chatHistory) return;
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${message.role}-message`;
+                messageDiv.id = `message-${message.id}`;
+                
+                const avatar = document.createElement('div');
+                avatar.className = 'message-avatar';
+                avatar.innerHTML = message.role === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
+                
+                const content = document.createElement('div');
+                content.className = 'message-content';
+                
+                const textDiv = document.createElement('div');
+                textDiv.className = 'message-text';
+                textDiv.innerHTML = this.formatMessageText(message.content);
+                content.appendChild(textDiv);
+                
+                messageDiv.appendChild(avatar);
+                messageDiv.appendChild(content);
+                
+                chatHistory.appendChild(messageDiv);
+            }
+
+            formatMessageText(text) {
+                if (!text) return '';
+                
+                return text
+                    .replace(/\n/g, '<br>')
+                    .replace(/\r\n/g, '<br>')
+                    .replace(/\r/g, '<br>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/`(.*?)`/g, '<code>$1</code>');
+            }
+
+            scrollToBottom() {
+                const chatHistory = document.getElementById('chatHistory');
+                if (chatHistory) {
+                    chatHistory.scrollTop = chatHistory.scrollHeight;
+                }
+            }
+
+            showWelcomeMessage() {
+                this.addMessage('ai', 'Hello! I\'m your streaming test assistant. I can demonstrate real-time text output. Try sending me a message!');
+            }
+        }
+
+        let streamingAssistant;
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded event fired');
+            
+            setTimeout(() => {
+                console.log('Initializing Streaming Test Assistant...');
+                streamingAssistant = new StreamingTestAssistant();
+            }, 100);
+        });
+
+        function testStreaming() {
+            if (streamingAssistant) {
+                const userInput = document.getElementById('userInput');
+                userInput.value = '请演示流式输出效果';
+                streamingAssistant.sendMessage();
+            } else {
+                alert('流式测试助手未初始化');
+            }
+        }
+
+        function testLongResponse() {
+            if (streamingAssistant) {
+                const userInput = document.getElementById('userInput');
+                userInput.value = '请给我一个很长的回复来测试无限制输出';
+                streamingAssistant.sendMessage();
+            } else {
+                alert('流式测试助手未初始化');
+            }
+        }
+
+        function clearChat() {
+            const chatHistory = document.getElementById('chatHistory');
+            if (chatHistory) {
+                chatHistory.innerHTML = '<p class="text-muted text-center">聊天记录已清空...</p>';
+                if (streamingAssistant) {
+                    streamingAssistant.showWelcomeMessage();
+                }
+            }
+        }
+    </script>
+</body>
+</html>

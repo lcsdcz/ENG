@@ -100,6 +100,38 @@ body {
     flex-direction: row;
 }
 
+/* 流式输出样式 */
+.typing-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1.2em;
+    background-color: var(--primary-color);
+    animation: blink 1s infinite;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
+/* 流式消息实时更新效果 */
+.message-text {
+    transition: all 0.1s ease;
+}
+
+.ai-message .message-text {
+    position: relative;
+}
+
+/* 优化流式输出的显示 */
+.ai-message .message-content {
+    max-width: 80%;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}
+
 .message-avatar {
     width: 40px;
     height: 40px;

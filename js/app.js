@@ -11,18 +11,17 @@ class EnglishAIAssistant {
                 apiKey: 'sk-oQ5JuAiv2D9SQZ0Y48LvJEUvqfuxjPR2weQJMOnF0IR7fkMQ',
                 apiUrl: 'https://gpt.soruxgpt.com/api/api/v1/chat/completions',
                 model: 'gpt-4o',
-                maxTokens: 500,
+                maxTokens: null, // 无上限
                 temperature: 0.7
             },
             systemPrompt: `You are a helpful English conversation AI assistant. CRITICAL RULE: You must ALWAYS communicate in English ONLY. Never respond in Chinese or any other language.`,
-            translationPrompt: `Please translate the following English text to Chinese while maintaining the original meaning and tone:`,
             streaming: true,
             requestTimeoutMs: 30000
         };
         
         this.chatHistory = [];
         this.isLoading = false;
-        this.translationEnabled = true;
+        this.translationEnabled = false; // 默认关闭翻译
         this.essayMode = false;
         
         console.log('EnglishAIAssistant initialized');
@@ -122,10 +121,12 @@ class EnglishAIAssistant {
             console.error('userInput.addEventListener is not a function', userInput);
         }
         
-        // 翻译开关
+        // 翻译开关（已禁用）
         const translationToggle = document.getElementById('translationToggle');
         if (translationToggle && typeof translationToggle.addEventListener === 'function') {
             translationToggle.addEventListener('click', () => this.toggleTranslation());
+            // 隐藏翻译按钮
+            translationToggle.style.display = 'none';
         }
         
         // 作文模式开关
@@ -173,24 +174,12 @@ class EnglishAIAssistant {
         this.showLoading(true);
         
         try {
-            let aiText = '';
-            if (this.config.streaming) {
-                aiText = await this.callOpenAIAPIStream(message);
-            } else {
-                aiText = await this.callOpenAIAPINonStream(message);
-            }
+            // 强制使用流式输出，实现实时显示
+            const aiText = await this.callOpenAIAPIStream(message);
             
             if (aiText) {
-                let chineseTranslation = '';
-                if (this.translationEnabled) {
-                    try {
-                        chineseTranslation = await this.translateToChinese(aiText);
-                    } catch (translationError) {
-                        console.error('翻译失败:', translationError);
-                        chineseTranslation = this.getLocalTranslation(aiText);
-                    }
-                }
-                this.addMessage('ai', aiText, chineseTranslation);
+                // 不再需要翻译，直接添加AI消息
+                this.addMessage('ai', aiText, '');
             } else {
                 this.showError('AI回复失败，请重试');
             }
@@ -204,7 +193,7 @@ class EnglishAIAssistant {
         }
     }
     
-    // 非流式回退
+    // 非流式回退（简化版，仅用于错误处理）
     async callOpenAIAPINonStream(userMessage) {
         const systemPrompt = this.essayMode ? this.getEssaySystemPrompt() : this.config.systemPrompt;
         const messages = [
@@ -215,7 +204,6 @@ class EnglishAIAssistant {
         const requestData = {
             model: this.config.openai.model,
             messages,
-            max_tokens: this.config.openai.maxTokens,
             temperature: this.config.openai.temperature,
             stream: false
         };
@@ -249,7 +237,7 @@ class EnglishAIAssistant {
         }
     }
 
-    // 流式输出
+    // 流式输出（实时显示）
     async callOpenAIAPIStream(userMessage) {
         const systemPrompt = this.essayMode ? this.getEssaySystemPrompt() : this.config.systemPrompt;
         const messages = [
@@ -260,7 +248,6 @@ class EnglishAIAssistant {
         const requestData = {
             model: this.config.openai.model,
             messages,
-            max_tokens: this.config.openai.maxTokens,
             temperature: this.config.openai.temperature,
             stream: true
         };
@@ -375,7 +362,17 @@ class EnglishAIAssistant {
         if (!el) return;
         const textDiv = el.querySelector('.message-text');
         if (!textDiv) return;
+        
+        // 实时更新文本内容
         textDiv.innerHTML = this.formatMessageText(text);
+        
+        // 自动滚动到底部，确保用户能看到最新的回复
+        this.scrollToBottom();
+        
+        // 添加打字机效果的光标（可选）
+        if (text && !text.endsWith('\n')) {
+            textDiv.innerHTML += '<span class="typing-cursor">|</span>';
+        }
     }
 
     getEssaySystemPrompt() {
@@ -411,68 +408,7 @@ REMEMBER: Always respond in English ONLY.`;
         return "That's interesting! I'd love to hear more about that. Let's continue our English conversation!";
     }
     
-    async translateToChinese(englishText) {
-        try {
-            const messages = [
-                { role: 'system', content: this.config.translationPrompt },
-                { role: 'user', content: englishText }
-            ];
-            
-            const requestData = {
-                model: this.config.openai.model,
-                messages: messages,
-                max_tokens: 300,
-                temperature: 0.3,
-                stream: false
-            };
-            
-            const { response, timeoutId } = await this.fetchWithTimeout(this.config.openai.apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.config.openai.apiKey.trim()}`,
-                    'Content-Type': 'application/json',
-                    'User-Agent': 'English-AI-Assistant/1.0'
-                },
-                body: JSON.stringify(requestData)
-            });
-            clearTimeout(timeoutId);
-            
-            if (!response.ok) {
-                return this.getLocalTranslation(englishText);
-            }
-            
-            const result = await response.json();
-            
-            if (result.choices && result.choices.length > 0) {
-                return result.choices[0].message.content;
-            } else {
-                return this.getLocalTranslation(englishText);
-            }
-        } catch (error) {
-            console.error('翻译失败:', error);
-            return this.getLocalTranslation(englishText);
-        }
-    }
-    
-    getLocalTranslation(englishText) {
-        const translations = {
-            'hello': '你好',
-            'hi': '嗨',
-            'thank you': '谢谢',
-            'how are you': '你好吗',
-            'nice to meet you': '很高兴认识你'
-        };
-        
-        const lowerText = englishText.toLowerCase();
-        
-        for (const [eng, chn] of Object.entries(translations)) {
-            if (lowerText.includes(eng)) {
-                return chn;
-            }
-        }
-        
-        return '这是AI的英文回复。如需完整翻译，请稍后再试。';
-    }
+
     
     addMessage(role, content, translation = '') {
         const message = {
@@ -519,13 +455,7 @@ REMEMBER: Always respond in English ONLY.`;
         textDiv.innerHTML = this.formatMessageText(message.content);
         content.appendChild(textDiv);
         
-        // 显示翻译
-        if (this.translationEnabled && message.translation && message.role === 'ai') {
-            const translationDiv = document.createElement('div');
-            translationDiv.className = 'message-translation';
-            translationDiv.textContent = message.translation;
-            content.appendChild(translationDiv);
-        }
+        // 不再显示翻译
         
         messageDiv.appendChild(avatar);
         messageDiv.appendChild(content);
@@ -683,15 +613,14 @@ REMEMBER: Always respond in English ONLY.`;
         if (this.chatHistory.length === 0) {
             this.addMessage('ai', 
                 'Hello! I\'m your English conversation AI assistant. I\'m here to help you improve your English skills through natural conversation. What would you like to talk about today?',
-                '你好！我是你的英语对话AI助手。我在这里帮助你通过自然对话提高英语水平。你今天想聊什么？'
+                ''
             );
         }
     }
     
     toggleTranslation() {
-        this.translationEnabled = !this.translationEnabled;
-        this.updateTranslationButton();
-        this.renderAllMessages();
+        // 翻译功能已禁用
+        console.log('Translation feature is disabled');
     }
     
     toggleEssayMode() {
@@ -700,20 +629,7 @@ REMEMBER: Always respond in English ONLY.`;
     }
     
     updateTranslationButton() {
-        const button = document.getElementById('translationToggle');
-        const text = document.getElementById('translationText');
-        
-        if (button && text) {
-            if (this.translationEnabled) {
-                button.classList.remove('btn-outline-warning');
-                button.classList.add('btn-outline-light');
-                text.textContent = '中文翻译';
-            } else {
-                button.classList.remove('btn-outline-light');
-                button.classList.add('btn-outline-warning');
-                text.textContent = '仅英文';
-            }
-        }
+        // 翻译功能已禁用，按钮已隐藏
     }
     
     updateEssayModeButton() {
@@ -754,7 +670,7 @@ REMEMBER: Always respond in English ONLY.`;
                 content += `${msg.content}\n`;
                 
                 if (msg.translation) {
-                    content += `翻译: ${msg.translation}\n`;
+                    // 不再显示翻译
                 }
                 
                 content += '\n';
