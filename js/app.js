@@ -50,6 +50,9 @@ class EnglishAIAssistant {
         // 设置事件监听器
         this.setupEventListeners(elements);
         
+        // 确保加载状态被重置
+        this.showLoading(false);
+        
         // 加载历史记录
         this.loadChatHistory();
         
@@ -180,7 +183,12 @@ class EnglishAIAssistant {
             if (aiText) {
                 let chineseTranslation = '';
                 if (this.translationEnabled) {
-                    chineseTranslation = await this.translateToChinese(aiText);
+                    try {
+                        chineseTranslation = await this.translateToChinese(aiText);
+                    } catch (translationError) {
+                        console.error('翻译失败:', translationError);
+                        chineseTranslation = this.getLocalTranslation(aiText);
+                    }
                 }
                 this.addMessage('ai', aiText, chineseTranslation);
             } else {
@@ -190,7 +198,9 @@ class EnglishAIAssistant {
             console.error('API调用错误:', error);
             this.showError('网络错误，请检查网络连接后重试');
         } finally {
+            // 确保在所有情况下都重置加载状态
             this.showLoading(false);
+            console.log('Loading state reset to false');
         }
     }
     
@@ -324,9 +334,15 @@ class EnglishAIAssistant {
             return fullText || '...';
         } catch (error) {
             console.error('OpenAI API（流式）调用失败，回退到非流式:', error);
-            const nonStream = await this.callOpenAIAPINonStream(userMessage);
-            this.updateStreamMessage(placeholder.id, nonStream);
-            return nonStream;
+            try {
+                const nonStream = await this.callOpenAIAPINonStream(userMessage);
+                this.updateStreamMessage(placeholder.id, nonStream);
+                return nonStream;
+            } catch (fallbackError) {
+                console.error('回退到非流式也失败:', fallbackError);
+                this.updateStreamMessage(placeholder.id, this.getLocalFallbackResponse(userMessage));
+                return this.getLocalFallbackResponse(userMessage);
+            }
         }
     }
 
@@ -540,6 +556,7 @@ REMEMBER: Always respond in English ONLY.`;
     
     showLoading(show) {
         this.isLoading = show;
+        console.log('showLoading called with:', show);
         
         if (show) {
             this.showThinkingIndicator();
@@ -553,6 +570,9 @@ REMEMBER: Always respond in English ONLY.`;
             sendButton.innerHTML = show ? 
                 '<i class="fas fa-spinner fa-spin me-1"></i>发送中...' : 
                 '<i class="fas fa-paper-plane me-1"></i>发送';
+            console.log('Send button updated:', show ? 'loading' : 'ready');
+        } else {
+            console.error('sendButton element not found in showLoading');
         }
     }
     
@@ -771,6 +791,20 @@ REMEMBER: Always respond in English ONLY.`;
     containsChinese(text) {
         return /[\u4e00-\u9fff]/.test(text);
     }
+    
+    // 强制重置加载状态（用于调试和修复）
+    forceResetLoading() {
+        console.log('Force resetting loading state');
+        this.isLoading = false;
+        this.hideThinkingIndicator();
+        
+        const sendButton = document.getElementById('sendButton');
+        if (sendButton) {
+            sendButton.disabled = false;
+            sendButton.innerHTML = '<i class="fas fa-paper-plane me-1"></i>发送';
+            console.log('Send button force reset to ready state');
+        }
+    }
 }
 
 // 页面加载完成后初始化
@@ -781,5 +815,13 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         console.log('Initializing English AI Assistant...');
         window.aiAssistant = new EnglishAIAssistant();
+        
+        // 额外的安全检查：确保加载状态被正确重置
+        setTimeout(() => {
+            if (window.aiAssistant && window.aiAssistant.isLoading) {
+                console.warn('Loading state was still true after initialization, forcing reset');
+                window.aiAssistant.forceResetLoading();
+            }
+        }, 1000);
     }, 100);
 });
