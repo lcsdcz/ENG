@@ -10,7 +10,7 @@ class EnglishAIAssistant {
             // API配置现在通过Vercel serverless functions，前端不包含敏感信息
             apiUrl: '/api/chat', // 使用Vercel API路由
             systemPrompt: `You are a helpful English conversation AI assistant. CRITICAL RULE: You must ALWAYS communicate in English ONLY. Never respond in Chinese or any other language.`,
-            streaming: true,
+            streaming: false, // 禁用流式输出，使用普通响应
             requestTimeoutMs: 30000
         };
         
@@ -172,9 +172,10 @@ class EnglishAIAssistant {
         this.showLoading(true);
         
         try {
-            // 强制使用流式输出，实现实时显示
-            await this.callOpenAIAPIStream(message);
-            // 流式输出已经通过updateStreamMessage实时显示，不需要再addMessage
+            // 使用普通响应（非流式），因为SoruxGPT流式输出有问题
+            const aiResponse = await this.callOpenAIAPINonStream(message);
+            // 添加AI回复到历史记录
+            this.addMessage('ai', aiResponse);
         } catch (error) {
             console.error('API调用错误:', error);
             this.showError('网络错误，请检查网络连接后重试');
