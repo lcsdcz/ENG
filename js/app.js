@@ -248,6 +248,7 @@ class EnglishAIAssistant {
 
         // 先在界面放一个占位的AI消息
         const placeholder = this.createAIMessagePlaceholder();
+        console.log('创建流式消息占位符:', placeholder.id);
         let fullText = '';
 
         try {
@@ -314,6 +315,7 @@ class EnglishAIAssistant {
             }
             
             // 流式输出完成，将最终消息添加到历史记录
+            console.log('流式输出完成，最终文本长度:', fullText.length);
             this.finalizeStreamMessage(placeholder.id, fullText || '...');
             
         } catch (error) {
@@ -341,14 +343,17 @@ class EnglishAIAssistant {
 
     // 创建一个AI消息占位，用于流式更新
     createAIMessagePlaceholder() {
+        // 使用addMessage但不添加到历史记录
+        const messageId = Date.now();
         const message = {
-            id: Date.now(),
+            id: messageId,
             role: 'ai',
             content: '',
             translation: '',
             timestamp: new Date().toISOString()
         };
-        this.chatHistory.push(message);
+        
+        // 只渲染到界面，不添加到历史记录
         this.renderMessage(message);
         this.scrollToBottom();
         return message;
@@ -383,7 +388,7 @@ class EnglishAIAssistant {
         // 移除打字光标，显示最终文本
         textDiv.innerHTML = this.formatMessageText(finalText);
         
-        // 将消息添加到历史记录
+        // 将消息添加到历史记录（只添加一次）
         const message = {
             id: messageId,
             role: 'ai',
@@ -446,7 +451,7 @@ REMEMBER: Always respond in English ONLY.`;
     
 
     
-    addMessage(role, content, translation = '') {
+    addMessage(role, content, translation = '', addToHistory = true) {
         const message = {
             id: Date.now(),
             role: role,
@@ -455,14 +460,18 @@ REMEMBER: Always respond in English ONLY.`;
             timestamp: new Date().toISOString()
         };
         
-        this.chatHistory.push(message);
-        console.log('Message added:', message);
+        if (addToHistory) {
+            this.chatHistory.push(message);
+            console.log('Message added to history:', message);
+        }
         
         // 渲染消息
         this.renderMessage(message);
         
-        // 保存历史记录
-        this.saveChatHistory();
+        if (addToHistory) {
+            // 保存历史记录
+            this.saveChatHistory();
+        }
         
         // 滚动到底部
         this.scrollToBottom();
@@ -472,6 +481,13 @@ REMEMBER: Always respond in English ONLY.`;
         const chatHistory = document.getElementById('chatHistory');
         if (!chatHistory) {
             console.error('chatHistory element not found in renderMessage');
+            return;
+        }
+        
+        // 检查是否已经存在相同ID的消息
+        const existingMessage = document.getElementById(`message-${message.id}`);
+        if (existingMessage) {
+            console.log('消息已存在，跳过渲染:', message.id);
             return;
         }
         
@@ -497,7 +513,7 @@ REMEMBER: Always respond in English ONLY.`;
         messageDiv.appendChild(content);
         
         chatHistory.appendChild(messageDiv);
-        console.log('Message rendered successfully');
+        console.log('Message rendered successfully:', message.id);
     }
     
     formatMessageText(text) {
