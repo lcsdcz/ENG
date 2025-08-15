@@ -10,10 +10,13 @@ const API_CONFIG = {
 };
 
 export default async function handler(req, res) {
-  // 设置CORS
+  // 设置CORS和安全头
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
 
   // 处理OPTIONS请求
   if (req.method === 'OPTIONS') {
@@ -109,7 +112,7 @@ async function handleStreamResponse(requestData, res) {
     }
 
     // 设置流式响应头
-    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
