@@ -67,6 +67,14 @@ export default async function handler(req, res) {
 
 async function handleNormalResponse(requestData, res) {
   try {
+    console.log('发送请求到SoruxGPT:', {
+      url: API_CONFIG.api_url,
+      model: requestData.model,
+      messages: requestData.messages.length,
+      stream: requestData.stream,
+      temperature: requestData.temperature
+    });
+
     const response = await fetch(API_CONFIG.api_url, {
       method: 'POST',
       headers: {
@@ -77,17 +85,36 @@ async function handleNormalResponse(requestData, res) {
       body: JSON.stringify(requestData)
     });
 
+    console.log('SoruxGPT响应状态:', response.status, response.statusText);
+    console.log('SoruxGPT响应头:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API Error:', response.status, errorText);
+      console.error('SoruxGPT API错误:', response.status, errorText);
+      
+      // 尝试解析错误详情
+      try {
+        const errorJson = JSON.parse(errorText);
+        console.error('解析后的错误JSON:', errorJson);
+      } catch (e) {
+        console.error('错误响应不是JSON格式');
+      }
+      
       return res.status(response.status).json({ error: errorText });
     }
 
     const result = await response.json();
+    console.log('SoruxGPT成功响应:', {
+      id: result.id,
+      model: result.model,
+      choices: result.choices ? result.choices.length : 0,
+      content: result.choices && result.choices[0] ? result.choices[0].message?.content?.substring(0, 100) + '...' : 'No content'
+    });
+    
     return res.status(200).json(result);
 
   } catch (error) {
-    console.error('Normal response error:', error);
+    console.error('SoruxGPT API调用异常:', error);
     return res.status(500).json({ error: error.message });
   }
 }
