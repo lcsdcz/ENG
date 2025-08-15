@@ -1,15 +1,21 @@
-# 依赖
+# Dependencies
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# 环境变量
+# Environment variables
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Build outputs
+.next/
+out/
+dist/
+build/
 
 # Vercel
 .vercel
@@ -31,14 +37,14 @@ venv.bak/
 .idea/
 *.swp
 *.swo
+*~
 
-# 系统文件
+# OS
 .DS_Store
 Thumbs.db
 
-# 日志
+# Logs
 *.log
 
-# 临时文件
-*.tmp
-*.temp
+# English subdirectory (nested git repo)
+english/
