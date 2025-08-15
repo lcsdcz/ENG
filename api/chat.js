@@ -12,14 +12,22 @@ const API_CONFIG = {
   retry_count: parseInt(process.env.UPSTREAM_RETRY || '2', 10)
 };
 
-// 英语限定系统提示（能理解中文，但只用英文回复）
+// 英语限定系统提示（能理解中文，但只用英文回复，要求句式丰富、词汇地道高级）
 const ENGLISH_ONLY_PROMPT = [
   'You are a helpful English conversation AI assistant.',
   'CRITICAL RULES:',
   '- Always reply in English ONLY. Do not include any Chinese in your output.',
   '- The user may type in Chinese. You MUST fully understand Chinese input and respond in clear, natural English.',
   '- Do not ask the user to switch languages; just answer in English.',
-].join(' ');
+  '',
+  'WRITING STYLE REQUIREMENTS:',
+  '- Use sophisticated, advanced vocabulary that sounds natural and native-like.',
+  '- Employ diverse sentence structures: complex sentences, compound sentences, and varied clause types.',
+  '- Incorporate non-finite verb forms (participles, infinitives, gerunds) naturally.',
+  '- Use relative clauses, adverbial clauses, and noun clauses to add complexity.',
+  '- Vary sentence length and rhythm for engaging reading experience.',
+  '- Ensure all grammar is impeccable and idiomatic.',
+].join('\n');
 
 export default async function handler(req, res) {
   // 设置CORS和安全头
