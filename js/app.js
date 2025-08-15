@@ -7,13 +7,8 @@ class EnglishAIAssistant {
     constructor() {
         // 内置配置
         this.config = {
-            openai: {
-                apiKey: 'sk-FadRRn1rmnl5cBivgMuR7pvppW8bTxo83QAUJ0osdAEnxEXe',
-                apiUrl: 'https://new1.588686.xyz/v1/chat/completions',
-                model: 'deepseek-ai/DeepSeek-V3-0324-fast',
-                maxTokens: null, // 无上限
-                temperature: 0.7
-            },
+            // API配置现在通过Vercel serverless functions，前端不包含敏感信息
+            apiUrl: '/api/chat', // 使用Vercel API路由
             systemPrompt: `You are a helpful English conversation AI assistant. CRITICAL RULE: You must ALWAYS communicate in English ONLY. Never respond in Chinese or any other language.`,
             streaming: true,
             requestTimeoutMs: 30000
@@ -57,6 +52,9 @@ class EnglishAIAssistant {
         
         // 显示欢迎消息
         this.showWelcomeMessage();
+        
+        // 清理可能残留的光标
+        this.removeAllCursors();
         
         console.log('App setup completed');
     }
@@ -196,16 +194,13 @@ class EnglishAIAssistant {
             { role: 'user', content: userMessage }
         ];
         const requestData = {
-            model: this.config.openai.model,
             messages,
-            temperature: this.config.openai.temperature,
             stream: false
         };
         try {
-            const { response } = await this.fetchWithTimeout(this.config.openai.apiUrl, {
+            const { response } = await this.fetchWithTimeout(this.config.apiUrl, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${this.config.openai.apiKey.trim()}`,
                     'Content-Type': 'application/json',
                     'User-Agent': 'English-AI-Assistant/1.0'
                 },
@@ -240,9 +235,7 @@ class EnglishAIAssistant {
             { role: 'user', content: userMessage }
         ];
         const requestData = {
-            model: this.config.openai.model,
             messages,
-            temperature: this.config.openai.temperature,
             stream: true
         };
 
@@ -252,10 +245,9 @@ class EnglishAIAssistant {
         let fullText = '';
 
         try {
-            const { response, controller, timeoutId } = await this.fetchWithTimeout(this.config.openai.apiUrl, {
+            const { response, controller, timeoutId } = await this.fetchWithTimeout(this.config.apiUrl, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${this.config.openai.apiKey.trim()}`,
                     'Content-Type': 'application/json',
                     'Accept': 'text/event-stream',
                     'User-Agent': 'English-AI-Assistant/1.0'
@@ -269,6 +261,7 @@ class EnglishAIAssistant {
                 console.warn('流式返回不可用，回退到非流式');
                 const nonStream = await this.callOpenAIAPINonStream(userMessage);
                 this.updateStreamMessage(placeholder.id, nonStream);
+                this.finalizeStreamMessage(placeholder.id, nonStream);
                 return; // 不返回文本，避免重复显示
             }
 
@@ -372,7 +365,7 @@ class EnglishAIAssistant {
         // 自动滚动到底部，确保用户能看到最新的回复
         this.scrollToBottom();
         
-        // 添加打字机效果的光标
+        // 添加打字机效果的光标（只在流式输出过程中显示）
         if (text && !text.endsWith('\n')) {
             textDiv.innerHTML += '<span class="typing-cursor">|</span>';
         }
@@ -387,6 +380,13 @@ class EnglishAIAssistant {
         
         // 移除打字光标，显示最终文本
         textDiv.innerHTML = this.formatMessageText(finalText);
+        
+            // 确保移除所有光标
+    const cursors = textDiv.querySelectorAll('.typing-cursor');
+    cursors.forEach(cursor => cursor.remove());
+    
+    // 全局清理所有光标（以防万一）
+    this.removeAllCursors();
         
         // 将消息添加到历史记录（只添加一次）
         const message = {
@@ -414,6 +414,13 @@ class EnglishAIAssistant {
         this.scrollToBottom();
         
         console.log('流式消息已完成:', finalText.substring(0, 50) + '...');
+    }
+
+    // 移除所有打字光标
+    removeAllCursors() {
+        const allCursors = document.querySelectorAll('.typing-cursor');
+        allCursors.forEach(cursor => cursor.remove());
+        console.log('已移除所有打字光标');
     }
 
     getEssaySystemPrompt() {

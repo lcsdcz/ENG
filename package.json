@@ -1,0 +1,26 @@
+{
+  "name": "english-ai-assistant",
+  "version": "1.0.0",
+  "description": "English AI Assistant with secure API proxy",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build step required'",
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "eventsource-parser": "^1.1.1"
+  },
+  "devDependencies": {
+    "vercel": "^32.0.0"
+  },
+  "keywords": [
+    "ai",
+    "chat",
+    "english",
+    "openai",
+    "vercel"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}

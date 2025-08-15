@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "functions": {
+    "api/chat.js": {
+      "maxDuration": 60
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ],
+  "env": {
+    "OPENAI_API_KEY": "@openai_api_key",
+    "OPENAI_API_URL": "@openai_api_url",
+    "OPENAI_MODEL": "@openai_model",
+    "OPENAI_TEMPERATURE": "@openai_temperature"
+  }
+}
