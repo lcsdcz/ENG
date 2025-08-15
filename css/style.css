@@ -61,6 +61,7 @@ body {
     overflow-y: auto;
     padding: 1.5rem;
     background: var(--light-color);
+    resize: vertical;
 }
 
 .chat-history::-webkit-scrollbar {
@@ -766,4 +767,10 @@ input:checked + .slider:before {
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
     }
+}
+
+/* 复制按钮微调 */
+.message-content .btn.btn-outline-secondary {
+	padding: 0.2rem 0.5rem;
+	font-size: 0.8rem;
 }

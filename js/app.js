@@ -127,10 +127,10 @@ class EnglishAIAssistant {
             translationToggle.style.display = 'none';
         }
         
-        // 作文模式开关
+        // 作文模式开关（移除）
         const essayModeToggle = document.getElementById('essayModeToggle');
-        if (essayModeToggle && typeof essayModeToggle.addEventListener === 'function') {
-            essayModeToggle.addEventListener('click', () => this.toggleEssayMode());
+        if (essayModeToggle) {
+            essayModeToggle.style.display = 'none';
         }
         
         // 功能按钮
@@ -550,7 +550,23 @@ REMEMBER: Always respond in English ONLY.`;
         textDiv.innerHTML = this.formatMessageText(message.content);
         content.appendChild(textDiv);
         
-        // 不再显示翻译
+        // 复制按钮
+        const toolsDiv = document.createElement('div');
+        toolsDiv.className = 'mt-2';
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'btn btn-sm btn-outline-secondary';
+        copyBtn.innerHTML = '<i class="fas fa-copy me-1"></i>复制';
+        copyBtn.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(message.content);
+                copyBtn.innerHTML = '<i class="fas fa-check text-success me-1"></i>已复制';
+                setTimeout(()=> copyBtn.innerHTML = '<i class="fas fa-copy me-1"></i>复制', 1500);
+            } catch (e) {
+                console.error('复制失败:', e);
+            }
+        });
+        toolsDiv.appendChild(copyBtn);
+        content.appendChild(toolsDiv);
         
         messageDiv.appendChild(avatar);
         messageDiv.appendChild(content);
