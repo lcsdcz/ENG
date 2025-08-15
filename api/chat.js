@@ -76,7 +76,7 @@ async function handleNormalResponse(requestData, res) {
       temperature: requestData.temperature
     });
 
-    const response = await fetchWithTimeoutAndRetry(API_CONFIG.api_url, {
+    let response = await fetchWithTimeoutAndRetry(API_CONFIG.api_url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${API_CONFIG.api_key}`,
@@ -90,7 +90,32 @@ async function handleNormalResponse(requestData, res) {
     console.log('SoruxGPT响应头:', Object.fromEntries(response.headers.entries()));
 
     if (!response.ok) {
-      const errorText = await response.text();
+      let errorText = await response.text();
+      
+      // Sorux 有时把上游 OpenAI 内部错误映射成 400，我们这里对包含 "server_inner_error_openai" 的 400 再做一次快速重试
+      if (response.status === 400 && typeof errorText === 'string' && errorText.includes('server_inner_error_openai')) {
+        console.warn('检测到 server_inner_error_openai(400)，进行一次快速重试');
+        await new Promise(r => setTimeout(r, 600));
+        response = await fetchWithTimeoutAndRetry(API_CONFIG.api_url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${API_CONFIG.api_key}`,
+            'Content-Type': 'application/json',
+            'User-Agent': 'English-AI-Assistant/1.0'
+          },
+          body: JSON.stringify(requestData)
+        });
+        if (response.ok) {
+          const result = await response.json();
+          console.log('SoruxGPT成功响应(经400重试):', {
+            id: result.id,
+            model: result.model,
+            choices: result.choices ? result.choices.length : 0
+          });
+          return res.status(200).json(result);
+        }
+        errorText = await response.text();
+      }
       console.error('SoruxGPT API错误:', response.status, errorText);
       
       // 尝试解析错误详情
@@ -122,7 +147,7 @@ async function handleNormalResponse(requestData, res) {
 
 async function handleStreamResponse(requestData, res) {
   try {
-    const response = await fetchWithTimeoutAndRetry(API_CONFIG.api_url, {
+    let response = await fetchWithTimeoutAndRetry(API_CONFIG.api_url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${API_CONFIG.api_key}`,
@@ -134,7 +159,26 @@ async function handleStreamResponse(requestData, res) {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
+      let errorText = await response.text();
+      if (response.status === 400 && typeof errorText === 'string' && errorText.includes('server_inner_error_openai')) {
+        console.warn('检测到 server_inner_error_openai(400)-stream，进行一次快速重试');
+        await new Promise(r => setTimeout(r, 600));
+        response = await fetchWithTimeoutAndRetry(API_CONFIG.api_url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${API_CONFIG.api_key}`,
+            'Content-Type': 'application/json',
+            'Accept': 'text/event-stream',
+            'User-Agent': 'English-AI-Assistant/1.0'
+          },
+          body: JSON.stringify(requestData)
+        });
+        if (response.ok) {
+          // 继续下面的流式逻辑
+        } else {
+          errorText = await response.text();
+        }
+      }
       console.error('OpenAI Stream API Error:', response.status, errorText);
       return res.status(response.status).json({ error: errorText });
     }
