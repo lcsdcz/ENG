@@ -572,7 +572,8 @@ REMEMBER: Always respond in English ONLY.`;
     }
     
     getRecentHistory() {
-        const recentMessages = this.chatHistory.slice(-20);
+        // 为了避免第三方上游对长上下文敏感，这里只带最近的 6 条对话
+        const recentMessages = this.chatHistory.slice(-6);
         return recentMessages.map(msg => ({
             role: msg.role,
             content: msg.content
