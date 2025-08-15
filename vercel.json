@@ -9,6 +9,7 @@
 		{ "src": "*.html", "use": "@vercel/static" }
 	],
 	"routes": [
+		{ "src": "/api/ping", "dest": "/api/ping.js" },
 		{ "src": "/api/(.*)", "dest": "/api/$1" },
 		{ "src": "/(.*)", "dest": "/$1" }
 	]
