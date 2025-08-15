@@ -272,7 +272,10 @@ class EnglishAIAssistant {
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
-                buffer += decoder.decode(value, { stream: true });
+                
+                const chunk = decoder.decode(value, { stream: true });
+                console.log('收到流式数据块:', chunk);
+                buffer += chunk;
 
                 const lines = buffer.split('\n');
                 // 保留最后一条不完整的行
@@ -281,20 +284,32 @@ class EnglishAIAssistant {
                 for (const raw of lines) {
                     const line = raw.trim();
                     if (!line) continue;
+                    
+                    console.log('处理行:', line);
                     if (line.startsWith('data:')) {
                         const data = line.replace(/^data:\s*/, '');
+                        console.log('提取数据:', data);
+                        
                         if (data === '[DONE]') {
+                            console.log('收到结束标记');
                             break;
                         }
+                        
                         try {
                             const json = JSON.parse(data);
+                            console.log('解析JSON:', json);
+                            
                             // 兼容OpenAI SSE格式：choices[0].delta.content
                             const delta = json.choices && json.choices[0] && json.choices[0].delta ? json.choices[0].delta.content : '';
+                            console.log('提取delta内容:', delta);
+                            
                             if (delta) {
                                 fullText += delta;
+                                console.log('累积文本:', fullText);
                                 this.updateStreamMessage(placeholder.id, fullText);
                             }
                         } catch (e) {
+                            console.log('JSON解析失败，忽略行:', e.message);
                             // 某些代理返回非JSON心跳/注释行，忽略
                         }
                     }

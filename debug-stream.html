@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>流式响应调试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-area { border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9; }
+        .log { margin: 5px 0; padding: 5px; background: #fff; border-left: 3px solid #007bff; }
+        .error { border-left-color: #dc3545; }
+        .success { border-left-color: #28a745; }
+        button { padding: 10px 20px; margin: 5px; }
+        textarea { width: 100%; height: 100px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>流式响应调试工具</h1>
+    
+    <div>
+        <label>测试消息:</label>
+        <textarea id="testMessage">Hello, please write a short story about a cat.</textarea>
+        <br>
+        <button onclick="testStream()">测试流式响应</button>
+        <button onclick="testNormal()">测试普通响应</button>
+        <button onclick="clearLogs()">清空日志</button>
+    </div>
+    
+    <div class="debug-area">
+        <h3>调试日志:</h3>
+        <div id="logs"></div>
+    </div>
+    
+    <div class="debug-area">
+        <h3>响应内容:</h3>
+        <div id="response"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const logDiv = document.createElement('div');
+            logDiv.className = `log ${type}`;
+            logDiv.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logsDiv.appendChild(logDiv);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+            document.getElementById('response').innerHTML = '';
+        }
+
+        async function testStream() {
+            log('开始测试流式响应...', 'info');
+            const message = document.getElementById('testMessage').value;
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'text/event-stream'
+                    },
+                    body: JSON.stringify({
+                        messages: [{ role: 'user', content: message }],
+                        stream: true
+                    })
+                });
+
+                log(`响应状态: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                log(`响应头: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`, 'info');
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log(`错误响应: ${errorText}`, 'error');
+                    return;
+                }
+
+                if (!response.body) {
+                    log('响应没有body，无法流式读取', 'error');
+                    return;
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let buffer = '';
+                let fullText = '';
+
+                log('开始读取流式数据...', 'info');
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) {
+                        log('流式读取完成', 'success');
+                        break;
+                    }
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    log(`收到数据块: ${JSON.stringify(chunk)}`, 'info');
+                    buffer += chunk;
+
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const raw of lines) {
+                        const line = raw.trim();
+                        if (!line) continue;
+                        
+                        log(`处理行: ${line}`, 'info');
+                        
+                        if (line.startsWith('data:')) {
+                            const data = line.replace(/^data:\s*/, '');
+                            log(`提取数据: ${data}`, 'info');
+                            
+                            if (data === '[DONE]') {
+                                log('收到结束标记', 'success');
+                                break;
+                            }
+                            
+                            try {
+                                const json = JSON.parse(data);
+                                log(`解析JSON: ${JSON.stringify(json)}`, 'info');
+                                
+                                const delta = json.choices && json.choices[0] && json.choices[0].delta ? json.choices[0].delta.content : '';
+                                log(`提取delta内容: ${JSON.stringify(delta)}`, 'info');
+                                
+                                if (delta) {
+                                    fullText += delta;
+                                    log(`累积文本: ${fullText}`, 'success');
+                                    document.getElementById('response').textContent = fullText;
+                                }
+                            } catch (e) {
+                                log(`JSON解析失败: ${e.message}`, 'error');
+                            }
+                        }
+                    }
+                }
+
+                log(`最终文本长度: ${fullText.length}`, 'info');
+                log(`最终文本: ${fullText}`, 'success');
+
+            } catch (error) {
+                log(`测试失败: ${error.message}`, 'error');
+                console.error('测试错误:', error);
+            }
+        }
+
+        async function testNormal() {
+            log('开始测试普通响应...', 'info');
+            const message = document.getElementById('testMessage').value;
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        messages: [{ role: 'user', content: message }],
+                        stream: false
+                    })
+                });
+
+                log(`响应状态: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log(`错误响应: ${errorText}`, 'error');
+                    return;
+                }
+
+                const result = await response.json();
+                log(`响应JSON: ${JSON.stringify(result, null, 2)}`, 'success');
+                
+                if (result.choices && result.choices.length > 0) {
+                    const content = result.choices[0].message.content;
+                    log(`AI回复内容: ${content}`, 'success');
+                    document.getElementById('response').textContent = content;
+                } else {
+                    log('响应中没有找到choices或content', 'error');
+                }
+
+            } catch (error) {
+                log(`测试失败: ${error.message}`, 'error');
+                console.error('测试错误:', error);
+            }
+        }
+    </script>
+</body>
+</html>
