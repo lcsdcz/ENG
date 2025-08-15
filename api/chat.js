@@ -33,7 +33,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { messages, stream = false, max_tokens } = req.body;
+    const { messages, max_tokens } = req.body;
 
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: 'Messages array is required' });
@@ -47,18 +47,14 @@ export default async function handler(req, res) {
       model: API_CONFIG.model,
       messages,
       temperature: API_CONFIG.temperature,
-      stream
+      // 强制非流式
+      stream: false
     };
 
     requestData.max_tokens = max_tokens || API_CONFIG.max_tokens;
 
-    if (stream) {
-      // 流式响应
-      return await handleStreamResponse(requestData, res);
-    } else {
-      // 非流式响应
-      return await handleNormalResponse(requestData, res);
-    }
+    // 一律走非流式响应
+    return await handleNormalResponse(requestData, res);
 
   } catch (error) {
     console.error('API Error:', error);
