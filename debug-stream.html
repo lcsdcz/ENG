@@ -3,19 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>流式响应调试</title>
+    <title>流式响应调试 - SoruxGPT兼容性测试</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         .debug-area { border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9; }
         .log { margin: 5px 0; padding: 5px; background: #fff; border-left: 3px solid #007bff; }
         .error { border-left-color: #dc3545; }
         .success { border-left-color: #28a745; }
+        .warning { border-left-color: #ffc107; }
         button { padding: 10px 20px; margin: 5px; }
         textarea { width: 100%; height: 100px; margin: 10px 0; }
+        .raw-data { background: #f0f0f0; padding: 10px; margin: 5px 0; font-family: monospace; white-space: pre-wrap; }
     </style>
 </head>
 <body>
-    <h1>流式响应调试工具</h1>
+    <h1>流式响应调试 - SoruxGPT兼容性测试</h1>
     
     <div>
         <label>测试消息:</label>
@@ -23,6 +25,7 @@
         <br>
         <button onclick="testStream()">测试流式响应</button>
         <button onclick="testNormal()">测试普通响应</button>
+        <button onclick="testRawResponse()">测试原始响应</button>
         <button onclick="clearLogs()">清空日志</button>
     </div>
     
@@ -34,6 +37,11 @@
     <div class="debug-area">
         <h3>响应内容:</h3>
         <div id="response"></div>
+    </div>
+
+    <div class="debug-area">
+        <h3>原始数据:</h3>
+        <div id="rawData"></div>
     </div>
 
     <script>
@@ -49,6 +57,15 @@
         function clearLogs() {
             document.getElementById('logs').innerHTML = '';
             document.getElementById('response').innerHTML = '';
+            document.getElementById('rawData').innerHTML = '';
+        }
+
+        function addRawData(title, data) {
+            const rawDiv = document.getElementById('rawData');
+            const dataDiv = document.createElement('div');
+            dataDiv.className = 'raw-data';
+            dataDiv.innerHTML = `<strong>${title}:</strong>\n${JSON.stringify(data, null, 2)}`;
+            rawDiv.appendChild(dataDiv);
         }
 
         async function testStream() {
@@ -86,6 +103,7 @@
                 const decoder = new TextDecoder('utf-8');
                 let buffer = '';
                 let fullText = '';
+                let rawChunks = [];
 
                 log('开始读取流式数据...', 'info');
 
@@ -98,6 +116,7 @@
 
                     const chunk = decoder.decode(value, { stream: true });
                     log(`收到数据块: ${JSON.stringify(chunk)}`, 'info');
+                    rawChunks.push(chunk);
                     buffer += chunk;
 
                     const lines = buffer.split('\n');
@@ -121,24 +140,52 @@
                             try {
                                 const json = JSON.parse(data);
                                 log(`解析JSON: ${JSON.stringify(json)}`, 'info');
+                                addRawData('解析的JSON', json);
                                 
-                                const delta = json.choices && json.choices[0] && json.choices[0].delta ? json.choices[0].delta.content : '';
-                                log(`提取delta内容: ${JSON.stringify(delta)}`, 'info');
+                                // 尝试多种可能的格式
+                                let delta = '';
+                                
+                                // 标准OpenAI格式
+                                if (json.choices && json.choices[0] && json.choices[0].delta) {
+                                    delta = json.choices[0].delta.content || '';
+                                    log(`标准格式delta: ${JSON.stringify(delta)}`, 'success');
+                                }
+                                // SoruxGPT可能的格式
+                                else if (json.choices && json.choices[0] && json.choices[0].message) {
+                                    delta = json.choices[0].message.content || '';
+                                    log(`SoruxGPT格式delta: ${JSON.stringify(delta)}`, 'warning');
+                                }
+                                // 其他可能的格式
+                                else if (json.content) {
+                                    delta = json.content;
+                                    log(`直接content格式: ${JSON.stringify(delta)}`, 'warning');
+                                }
+                                else if (json.text) {
+                                    delta = json.text;
+                                    log(`text格式: ${JSON.stringify(delta)}`, 'warning');
+                                }
                                 
                                 if (delta) {
                                     fullText += delta;
                                     log(`累积文本: ${fullText}`, 'success');
                                     document.getElementById('response').textContent = fullText;
+                                } else {
+                                    log(`未找到内容，完整JSON: ${JSON.stringify(json)}`, 'warning');
                                 }
                             } catch (e) {
                                 log(`JSON解析失败: ${e.message}`, 'error');
+                                log(`原始数据: ${data}`, 'error');
                             }
                         }
                     }
                 }
 
-                log(`最终文本长度: ${fullText.length}`, 'info');
-                log(`最终文本: ${fullText}`, 'success');
+                log(`最终文本长度: ${fullText.length}`, fullText.length > 0 ? 'success' : 'error');
+                log(`最终文本: ${fullText || '(空)'}`, fullText.length > 0 ? 'success' : 'error');
+                
+                // 显示所有原始数据
+                addRawData('所有原始数据块', rawChunks);
+                addRawData('最终buffer', buffer);
 
             } catch (error) {
                 log(`测试失败: ${error.message}`, 'error');
@@ -172,6 +219,7 @@
 
                 const result = await response.json();
                 log(`响应JSON: ${JSON.stringify(result, null, 2)}`, 'success');
+                addRawData('普通响应JSON', result);
                 
                 if (result.choices && result.choices.length > 0) {
                     const content = result.choices[0].message.content;
@@ -180,6 +228,43 @@
                 } else {
                     log('响应中没有找到choices或content', 'error');
                 }
+
+            } catch (error) {
+                log(`测试失败: ${error.message}`, 'error');
+                console.error('测试错误:', error);
+            }
+        }
+
+        async function testRawResponse() {
+            log('开始测试原始响应...', 'info');
+            const message = document.getElementById('testMessage').value;
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'text/event-stream'
+                    },
+                    body: JSON.stringify({
+                        messages: [{ role: 'user', content: message }],
+                        stream: true
+                    })
+                });
+
+                log(`响应状态: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log(`错误响应: ${errorText}`, 'error');
+                    return;
+                }
+
+                // 直接读取原始响应
+                const rawText = await response.text();
+                log(`原始响应长度: ${rawText.length}`, 'info');
+                log(`原始响应内容: ${rawText}`, 'info');
+                addRawData('原始响应', rawText);
 
             } catch (error) {
                 log(`测试失败: ${error.message}`, 'error');
