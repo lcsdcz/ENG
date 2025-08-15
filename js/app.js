@@ -199,7 +199,7 @@ class EnglishAIAssistant {
             stream: false
         };
         try {
-            const { response } = await this.fetchWithTimeout(this.config.apiUrl, {
+            let { response } = await this.fetchWithTimeout(this.config.apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -208,9 +208,29 @@ class EnglishAIAssistant {
                 body: JSON.stringify(requestData)
             });
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error('API Error:', response.status, errorText);
-                return this.getLocalFallbackResponse(userMessage);
+                let errorText = await response.text();
+                console.warn('API Error (first try):', response.status, errorText);
+                // 针对 Sorux 常见的 server_inner_error_openai/504 做一次快速重试
+                if (response.status === 400 && typeof errorText === 'string' && errorText.includes('server_inner_error_openai')
+                    || response.status === 504) {
+                    await new Promise(r => setTimeout(r, 600));
+                    const retry = await this.fetchWithTimeout(this.config.apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'User-Agent': 'English-AI-Assistant/1.0'
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+                    response = retry.response || retry; // 兼容结构
+                    if (!response.ok) {
+                        errorText = await response.text();
+                        console.error('API Error (retry failed):', response.status, errorText);
+                        return this.getLocalFallbackResponse(userMessage);
+                    }
+                } else {
+                    return this.getLocalFallbackResponse(userMessage);
+                }
             }
             const result = await response.json();
             if (result.choices && result.choices.length > 0) {
